@@ -13,6 +13,7 @@ import networkx as nx
 import random
 import os.path as osp
 import logging
+import json
 
 from tqdm import tqdm
 from argparse import ArgumentParser
@@ -41,11 +42,14 @@ def parse_triples(triples_file):
     return triples, rel_counts
 
 
-def read_entity_types(entity2type_file):
+def read_entity_types(entity2type_file, keep_ents=set()):
     type2entities = defaultdict(set)
     with open(entity2type_file) as f:
-        for line in f:
-            entity, label = line.strip().split()
+        entity2type = json.load(f)
+        for entity, label in entity2type.items():
+            if keep_ents:
+                if entity not in keep_ents:
+                    continue
             type2entities[label].add(entity)
     
     return dict(type2entities)
@@ -108,11 +112,6 @@ def drop_entities(triples_file, train_size=0.8, valid_size=0.1, test_size=0.1,
         raise ValueError('Sum of split sizes must be between greater than 0'
                          ' and less than or equal to 1.')
     
-    use_types = types_file is not None
-    if use_types:
-        type2entities = read_entity_types(types_file)
-        types = list(type2entities.keys())
-    
     random.seed(seed)
     
     graph = nx.MultiDiGraph()
@@ -120,6 +119,11 @@ def drop_entities(triples_file, train_size=0.8, valid_size=0.1, test_size=0.1,
     graph.add_weighted_edges_from(triples)
     original_num_edges = graph.number_of_edges()
     original_num_nodes = graph.number_of_nodes()
+    
+    use_types = types_file is not None
+    if use_types:
+        type2entities = read_entity_types(types_file, set(graph.nodes))
+        types = list(type2entities.keys())
     
     logger.info(f'Loaded graph with {graph.number_of_nodes():,} entities '
           f'and {graph.number_of_edges():,} edges')
@@ -189,12 +193,10 @@ def drop_entities(triples_file, train_size=0.8, valid_size=0.1, test_size=0.1,
     names = ('train', 'dev', 'test')
     
     dirname = osp.dirname(triples_file)
-    prefix = 'ind-'
+    prefix_type = '_type'if use_types else ''
+    prefix = f'ind{prefix_type}-'
     
     for entity_set, set_name in zip((train_ents, val_ents, test_ents), names):
-        # Save file with entities for set
-        # with open(osp.join(dirname, f'{set_name}-ind-ents.txt'), 'w') as file:
-        #     file.writelines('\n'.join(entity_set))
         
         if set_name == 'train':
             # Triples for train split are saved later
@@ -220,7 +222,7 @@ def drop_entities(triples_file, train_size=0.8, valid_size=0.1, test_size=0.1,
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--file', help='Input file')
-    parser.add_argument('--types_file', help='Tab-separated file of entities'
+    parser.add_argument('--types_file', help='JSON file of entities'
                                              ' and their type', default=None)
     parser.add_argument('--train_size', help='Fraction of entities used for'
                         ' training.', default=0.8, type=float)
@@ -232,6 +234,8 @@ if __name__ == '__main__':
 
 
 """
+
+$python create_inductive_triples_split.py --file UMLS/all-triples.tsv
 
 Loaded graph with 295,226 entities and 1,076,204 edges
 Removing 59,045 entities...

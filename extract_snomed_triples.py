@@ -70,7 +70,12 @@ filtered_semantic_types.to_csv(os.path.join(data_dir, 'filtered_semantic_info.cs
 ## 
 
 cui2sg = filtered_semantic_types.set_index('CUI')['SemGroup'].to_dict()
+with open(os.path.join(data_dir, 'cui2sg.json'), 'w') as fp:
+    json.dump(cui2sg, fp)
+
 cui2sty = filtered_semantic_types.set_index('CUI')['STY'].to_dict()
+with open(os.path.join(data_dir, 'cui2sty.json'), 'w') as fp:
+    json.dump(cui2sty, fp)
 
 ##
 
@@ -135,6 +140,37 @@ def create_datasets(triplets, data_dir):
     case2_train.to_csv(os.path.join(data_dir, 'train.tsv'), sep='\t', header=None, index=None)
     case2_valid.to_csv(os.path.join(data_dir, 'dev.tsv'), sep='\t', header=None, index=None)
     case2_test.to_csv(os.path.join(data_dir, 'test.tsv'), sep='\t', header=None, index=None)
+    
+    case2_train_triples = case2_train.values
+    case2_train_triples_sty = [(cui2sty[h], r, cui2sty[t]) for h, r, t in case2_train_triples]
+    pd.DataFrame(case2_train_triples_sty, columns=None).to_csv(
+        os.path.join(data_dir, 'train_types.tsv'), sep='\t', header=None, index=None
+    )
+    case2_train_triples_sg = [(cui2sg[h], r, cui2sg[t]) for h, r, t in case2_train_triples]
+    pd.DataFrame(case2_train_triples_sg, columns=None).to_csv(
+        os.path.join(data_dir, 'train_groups.tsv'), sep='\t', header=None, index=None
+    )
+    
+    case2_valid_triples = case2_valid.values
+    case2_valid_triples_sty = [(cui2sty[h], r, cui2sty[t]) for h, r, t in case2_valid_triples]
+    pd.DataFrame(case2_valid_triples_sty, columns=None).to_csv(
+        os.path.join(data_dir, 'valid_types.tsv'), sep='\t', header=None, index=None
+    )
+    case2_valid_triples_sg = [(cui2sg[h], r, cui2sg[t]) for h, r, t in case2_valid_triples]
+    pd.DataFrame(case2_valid_triples_sg, columns=None).to_csv(
+        os.path.join(data_dir, 'valid_groups.tsv'), sep='\t', header=None, index=None
+    )
+    
+    case2_test_triples = case2_test.values
+    case2_test_triples_sty = [(cui2sty[h], r, cui2sty[t]) for h, r, t in case2_test_triples]
+    pd.DataFrame(case2_test_triples_sty, columns=None).to_csv(
+        os.path.join(data_dir, 'test_types.tsv'), sep='\t', header=None, index=None
+    )
+    case2_test_triples_sg = [(cui2sg[h], r, cui2sg[t]) for h, r, t in case2_test_triples]
+    pd.DataFrame(case2_test_triples_sg, columns=None).to_csv(
+        os.path.join(data_dir, 'test_groups.tsv'), sep='\t', header=None, index=None
+    )
+
 
 
 def move_unseen_to_train(train, valid, test):
