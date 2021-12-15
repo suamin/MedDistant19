@@ -62,9 +62,9 @@ def main(args):
     t = time.time()
     
     # ---------------------------------------------------------------------------------------
-    # WARNING: depending on ``n_process`` and ``batch_size`` selection multi-processing
-    #          can be worse then sequential processing. One has to play around with the
-    #          system a bit before it finds the right combination. There is no one size fits all!
+    # WARNING: depending on ``n_process`` and ``batch_size`` selection, multi-processing
+    #          can be worse than sequential processing. One has to play around a bit with the
+    #          system before it finds the right combination. There is no one size fits all!
     #
     # more here: https://spacy.io/usage/processing-pipelines#multiprocessing
     # ---------------------------------------------------------------------------------------
@@ -118,16 +118,3 @@ if __name__=="__main__":
     pprint.pprint(vars(args))
     
     main(args)
-
-
-"""
-
-python scispacy_tokenization.py \
-  --data_dir MEDLINE \
-  --scispacy_model_name en_sci_core_lg \
-  --n_process 32 \
-  --batch_size 1024
-
->>> 2021-12-02 10:11:07,893 : INFO : Took 588.0 minutes and collected 151920518 sentences !
-
-"""

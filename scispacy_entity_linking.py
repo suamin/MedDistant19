@@ -173,24 +173,3 @@ if __name__=="__main__":
     pprint.pprint(vars(args))
     
     main(args)
-
-
-"""
-
-python scispacy_entity_linking.py \
-  --medline_unique_sents_fname MEDLINE/medline_pubmed_2019_unique_sents.txt \
-  --output_file MEDLINE/medline_pubmed_2019_entity_linked.jsonl \
-  --scispacy_model_name en_sci_core_lg \
-  --n_process 32 \
-  --batch_size 1024 \
-  --min_sent_tokens 5 \
-  --max_sent_tokens 128
-
-
-148578086it [40:06:27, 1165.31it/s]2021-12-04 14:52:49,165 : INFO : Processed 145000000 sents @ 60254.0 sents/min ...
-2021-12-04 14:52:49,165 : INFO : Dumping batch of sentences!
-Reading sentences ...: 149924648it [40:16:40, 1033.96it/s]
-149612722it [40:21:26, 1029.78it/s][40:16:40, 932.30it/s]
-2021-12-04 15:07:48,147 : INFO : Took 2421.0 minutes !
-
-"""

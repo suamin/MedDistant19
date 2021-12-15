@@ -39,7 +39,7 @@ if __name__=="__main__":
         help="Metamorphosys installation source path."
     )
     parser.add_argument(
-        "--dst", action="store", type=str, default="en_core_sci_lg",
+        "--dst", action="store", required=True, type=str,
         help="Metamorphosys installation destination path."
     )
     

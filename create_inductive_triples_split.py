@@ -2,7 +2,7 @@
 
 """
 
-The code is due to @dfdazac, adjusted from:
+The code is due to @dfdazac, adopted from:
     
     https://github.com/dfdazac/blp/blob/master/data/utils.py
 
@@ -231,15 +231,3 @@ if __name__ == '__main__':
     
     drop_entities(args.file, train_size=args.train_size, seed=args.seed,
                   types_file=args.types_file)
-
-
-"""
-
-$python create_inductive_triples_split.py --file UMLS/all-triples.tsv
-
-Loaded graph with 295,226 entities and 1,076,204 edges
-Removing 59,045 entities...
-Dropped 29,522 entities for validation and 29,522 for test.
-236,181 entities are left for training.
-
-"""
