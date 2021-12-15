@@ -100,7 +100,7 @@ def get_safely_removed_edges(graph, node, rel_counts, min_edges_left=100):
 
 
 def drop_entities(triples_file, train_size=0.8, valid_size=0.1, test_size=0.1,
-                  seed=0, types_file=None):
+                  seed=0, types_file=None, has_def=False):
     """Drop entities from a graph, to create training, validation and test
     splits.
     Entities are dropped so that no disconnected nodes are left in the training
@@ -193,8 +193,9 @@ def drop_entities(triples_file, train_size=0.8, valid_size=0.1, test_size=0.1,
     names = ('train', 'dev', 'test')
     
     dirname = osp.dirname(triples_file)
-    prefix_type = '_type'if use_types else ''
-    prefix = f'ind{prefix_type}-'
+    prefix_type = '_type' if use_types else ''
+    prefix_def = '_def' if has_def else ''
+    prefix = f'ind{prefix_type}{prefix_def}-'
     
     for entity_set, set_name in zip((train_ents, val_ents, test_ents), names):
         
@@ -224,10 +225,12 @@ if __name__ == '__main__':
     parser.add_argument('--file', help='Input file')
     parser.add_argument('--types_file', help='JSON file of entities'
                                              ' and their type', default=None)
+    parser.add_argument('--has_def', action='store_true', help='Whether the'
+                        ' in file has defintions')
     parser.add_argument('--train_size', help='Fraction of entities used for'
                         ' training.', default=0.8, type=float)
     parser.add_argument('--seed', help='Random seed', default=0)
     args = parser.parse_args()
     
     drop_entities(args.file, train_size=args.train_size, seed=args.seed,
-                  types_file=args.types_file)
+                  types_file=args.types_file, has_def=args.has_def)

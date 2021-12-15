@@ -2,7 +2,7 @@
 
 """
 
-The code is due to @dchang56, slightly adjusted from:
+The code is due to @dchang56, adopted from:
     
     https://github.com/dchang56/snomed_kge/blob/main/notebooks/umls_utils.ipynb
 
@@ -14,6 +14,7 @@ import json
 import numpy as np
 
 from collections import defaultdict
+
 
 snomed_dir = 'UMLS'
 data_dir = snomed_dir

@@ -137,7 +137,8 @@ class BioDSRECorpus:
             self,
             medline_entities_linked_fname: Union[str, Path],
             snomed_triples_dir: Union[str, Path],
-            split: Optional[str] = None
+            split: Optional[str] = None,
+            has_def: Optional[bool] = False
         ):
         self.medline_entities_linked_fname = medline_entities_linked_fname
         self.snomed_triples_dir = snomed_triples_dir
@@ -148,7 +149,7 @@ class BioDSRECorpus:
         self.entities = set()
         
         # identify inductive or transductive split
-        self.split = (split + '-') if split == 'ind' else ''
+        self.split = (split + ('_def' if has_def else '') + '-') if split == 'ind' else ''
         
         # type information is required to prune the negative pairs
         cui2sty_fname = Path(self.snomed_triples_dir) / 'cui2sty.json'
@@ -484,13 +485,15 @@ def main(args):
     corpus = BioDSRECorpus(
         args.medline_entities_linked_fname,
         args.triples_dir,
-        'ind' if args.split == 'ind' else None
+        'ind' if args.split == 'ind' else None,
+        args.has_def
     )
     # see if pos and neg linked files have been created before, simplz check for train
     check = all(list(
         map(os.path.exists, [corpus.pos_fname(split) for split in ['train', 'dev', 'test']] + [corpus.neg_fname,])
     ))
-    add_logging_handlers(logger, corpus.base_dir, f'corpus_{args.split}_{args.size}.log')
+    log_file = f'corpus_{args.split}' + ('_def' if args.has_def else '') + f'_{args.size}.log'
+    add_logging_handlers(logger, corpus.base_dir, log_file)
     if not check:
         # this will take time, go grab 2 cups of coffee :)
         ntr, nval, nte, nneg = corpus.search_pos_and_neg_instances()
@@ -530,6 +533,10 @@ if __name__=="__main__":
     parser.add_argument(
         "--split", action="store", type=str, default="trans", choices=["ind", "trans"],
         help="Which triples split to consider, inductive (`ind`) or transductive (`trans`)."
+    )
+    parser.add_argument(
+        "--has_def", action="store_true",
+        help="Whether this split has definitions for the entities."
     )
     parser.add_argument(
         "--size", action="store", type=str, default="S", choices=["S", "M", "L", "O"],
