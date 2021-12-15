@@ -1,0 +1,11 @@
+a41e493d34e91997ea587dd2f7f045dd  all-triples.tsv
+1d883594e4b3689f139864300243f90c  ind-dev.tsv
+e1d5a394d1653a9e4bf60479705914c7  ind-test.tsv
+ab552c35e9cb1d7201a79851f7a5f331  ind-train.tsv
+2e21ce0664525d960d44fe340fc7dffd  dev.tsv
+834da96d61d7e44b1fa96e2d0b9c0264  test.tsv
+1ceff300a4ecaf654329318891e16d7f  train.tsv
+fa9f3449b081857ac628bbe3922a52a0  all-triples_with-def.tsv
+aa7a36f79fa1563d4d48f4dbcbecca02  ind_def-dev.tsv
+d0eefc773cb169bf0d070323ec6cfd46  ind_def-test.tsv
+ac3a2a43318f757bb3d822c79fec986a  ind_def-train.tsv
