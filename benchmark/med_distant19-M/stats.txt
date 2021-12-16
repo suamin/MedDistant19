@@ -1,0 +1,15 @@
+12/16/2021 10:28:56 - INFO - Reading file benchmark/med_distant19-M/med_distant19-M_train.txt ...
+12/16/2021 10:29:17 - INFO - # of instances = 862683
+12/16/2021 10:29:17 - INFO - # of facts = 21433
+12/16/2021 10:29:17 - INFO - # NA (%) = 70.0%
+12/16/2021 10:29:17 - INFO - # of bags = 87829
+12/16/2021 10:29:18 - INFO - Reading file benchmark/med_distant19-M/med_distant19-M_dev.txt ...
+12/16/2021 10:29:21 - INFO - # of instances = 113569
+12/16/2021 10:29:21 - INFO - # of facts = 2686
+12/16/2021 10:29:21 - INFO - # NA (%) = 70.0%
+12/16/2021 10:29:21 - INFO - # of bags = 24226
+12/16/2021 10:29:21 - INFO - Reading file benchmark/med_distant19-M/med_distant19-M_test.txt ...
+12/16/2021 10:29:24 - INFO - # of instances = 109166
+12/16/2021 10:29:24 - INFO - # of facts = 2698
+12/16/2021 10:29:24 - INFO - # NA (%) = 70.0%
+12/16/2021 10:29:24 - INFO - # of bags = 23560
