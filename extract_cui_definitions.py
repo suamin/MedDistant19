@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import argparse
+import re
 
 from scispacy.umls_linking import UmlsEntityLinker
 from pathlib import Path
@@ -45,6 +46,7 @@ def search_definitions(linker, cuis):
                 cuis_in_db_missing_definitions += 1
                 continue
             else:
+                definition = re.sub(r'\s+', ' ', definition)
                 cui2def[cui] = definition
         else:
             missing_cuis_in_db += 1

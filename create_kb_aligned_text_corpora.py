@@ -373,7 +373,7 @@ class BioDSRECorpus:
         neg_idx2pair = read_idx_file(self.neg_fname)
         counts = dict()
         
-        for split in ['train', 'dev', 'test']:
+        for split in ['test', 'dev', 'train']:
             
             logger.info(f'Creating corpus for split {split} ...')
             
