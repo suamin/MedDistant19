@@ -120,6 +120,8 @@ def create_datasets(triplets, data_dir):
     """
     # Case 2: no reprical relations at all, so no leakage
     case2 = triplets[triplets['RELA'].isin(reciprocal_relations_dict.keys())]
+    rels = {k for k, v in broad_rel_types.items() if v == 'RO'}
+    case2 = case2[case2['RELA'].isin(rels)]
     case2 = case2.sample(frac=1, random_state=0)
     case2.to_csv(os.path.join(data_dir, 'all-triples.tsv'), sep='\t', header=None, index=None)
     
@@ -127,7 +129,7 @@ def create_datasets(triplets, data_dir):
     graph_file = os.path.join(data_dir, 'all-triples.tsv')
     files = ['train.tsv', 'dev.tsv', 'test.tsv']
     files = [os.path.join(data_dir, f) for f in files]
-    portions = [80, 10, 10]
+    portions = [70, 10, 20]
     edge_split(graph_file, files, portions)
     
     case2_train = pd.read_csv(os.path.join(data_dir, 'train.tsv'), sep='\t', header=None)
@@ -138,6 +140,15 @@ def create_datasets(triplets, data_dir):
     case2_test.columns = ['CUI1', 'RELA', 'CUI2']
     
     case2_train, case2_valid, case2_test = move_unseen_to_train(case2_train, case2_valid, case2_test)
+    
+    case2_train = remove_overlapping_pairs(case2_train, case2_test)
+    case2_train = remove_overlapping_pairs(case2_train, case2_valid)
+    case2_valid = remove_overlapping_pairs(case2_valid, case2_test)
+    
+    check_overlap(case2_train, case2_valid, 'valid')
+    check_overlap(case2_train, case2_test, 'test')
+    check_overlap(case2_valid, case2_test, 'test')
+    
     case2_train.to_csv(os.path.join(data_dir, 'train.tsv'), sep='\t', header=None, index=None)
     case2_valid.to_csv(os.path.join(data_dir, 'dev.tsv'), sep='\t', header=None, index=None)
     case2_test.to_csv(os.path.join(data_dir, 'test.tsv'), sep='\t', header=None, index=None)
@@ -173,7 +184,6 @@ def create_datasets(triplets, data_dir):
     )
 
 
-
 def move_unseen_to_train(train, valid, test):
     train_cuis = set(train['CUI1']) | set(train['CUI2'])
     valid_unseen_idx = -((valid['CUI1'].isin(train_cuis)) & (valid['CUI2'].isin(train_cuis)))
@@ -183,6 +193,72 @@ def move_unseen_to_train(train, valid, test):
     valid = valid[-valid_unseen_idx]
     test = test[-test_unseen_idx]
     return train, valid, test
+
+
+def remove_overlapping_pairs(train, test):
+    train_pairs = {(h, t) for h, t in train[['CUI1', 'CUI2']].values.tolist()}
+    train_pairs_inv = {(t, h) for h, t in train_pairs}
+    
+    test_pairs = {(h, t) for h, t in test[['CUI1', 'CUI2']].values.tolist()}
+    test_pairs_inv = {(t, h) for h, t in test_pairs}
+    
+    inter_pairs = train_pairs & test_pairs
+    inter_pairs_inv = train_pairs_inv & test_pairs
+    
+    pairs_to_remove = inter_pairs | inter_pairs_inv
+    heads, tails = zip(*pairs_to_remove)
+    heads, tails = set(heads), set(tails)
+    locs = list()
+    for idx, (cui1, cui2) in enumerate(train[['CUI1', 'CUI2']].values.tolist()):
+        if (cui1, cui2) in pairs_to_remove:
+            locs.append(idx)
+    for idx, (cui2, cui1) in enumerate(train[['CUI2', 'CUI1']].values.tolist()):
+        if (cui2, cui1) in pairs_to_remove:
+            locs.append(idx)
+    train.drop(train.index[locs], inplace=True)
+    return train
+
+
+def check_overlap(train, test, name):
+    train_triples = {(h, r, t) for h, r, t in train[['CUI1', 'RELA', 'CUI2']].values.tolist()}
+    train_triples_inv = {(t, r, h) for h, r, t in train_triples}
+    train_pairs = {(h, t) for h, _, t in train_triples}
+    train_pairs_inv = {(t, h) for h, t in train_pairs}
+    
+    test_triples = {(h, r, t) for h, r, t in test[['CUI1', 'RELA', 'CUI2']].values.tolist()}
+    test_triples_inv = {(t, r, h) for h, r, t in test_triples}
+    test_pairs = {(h, t) for h, _, t in test_triples}
+    test_pairs_inv = {(t, h) for h, t in test_pairs}
+    
+    inter_triples = train_triples & test_triples
+    union_triples = train_triples | test_triples
+    
+    inter_triples_inv = train_pairs_inv & test_triples
+    union_triples_inv = train_pairs_inv | test_triples
+    
+    inter_pairs = train_pairs & test_pairs
+    
+    inter_pairs_inv = train_pairs_inv & test_pairs
+    
+    print(f'Training/{name} intersection size: {len(inter_triples)}')
+    
+    print(f'Number of {name} triples in Training: '
+                f'{(len(inter_triples) / len(test_triples)) * 100:.2f}%')
+    
+    print(f'Inverse Training/{name} intersection size: {len(inter_triples_inv)}')
+    
+    print(f'Number of {name} triples in Inverse Training: '
+                f'{(len(inter_triples_inv) / len(test_triples)) * 100:.2f}%')
+    
+    print(f'Number of {name} triples in Training or Inverse Training: '
+                f'{(len(inter_triples | inter_triples_inv) / len(test_triples)) * 100:.2f}%')
+    
+    print(f'Number of {name} pairs in Training: '
+                f'{(len(inter_pairs) / len(test_pairs)) * 100:.2f}%')
+    
+    print(f'Number of {name} pairs in Inverse Training: '
+                f'{(len(inter_pairs_inv) / len(test_pairs)) * 100:.2f}%')
+
 
 ##
 
@@ -352,6 +428,16 @@ snomed_triplets[snomed_triplets['CUI1']=='C0037585']
 
 ##
 
+# two ways of looking at broader relation type metrics is to break them down 
+# to 1. broad types (RO, CHD, PAR, SY, RB, RN) and 2. one-or-many types
+broad_rel_types = filtered_relations.set_index('RELA')['REL'].to_dict()
+
+##
+
+with open(os.path.join(data_dir, 'relation2broad.json'), 'w') as fp:
+    json.dump(broad_rel_types, fp)
+
+
 create_datasets(snomed_triplets, data_dir)
 
 ##
@@ -368,14 +454,7 @@ with open(os.path.join(data_dir, 'snomed_cui2string.json'), 'w') as fp:
 
 ##
 
-# two ways of looking at broader relation type metrics is to break them down 
-# to 1. broad types (RO, CHD, PAR, SY, RB, RN) and 2. one-or-many types
-broad_rel_types = filtered_relations.set_index('RELA')['REL'].to_dict()
 
-##
-
-with open(os.path.join(data_dir, 'relation2broad.json'), 'w') as fp:
-    json.dump(broad_rel_types, fp)
 
 ##
 
