@@ -99,7 +99,7 @@ def get_safely_removed_edges(graph, node, rel_counts, min_edges_left=100):
     return removed_edges, removed_rel_counts
 
 
-def drop_entities(triples_file, train_size=0.8, valid_size=0.1, test_size=0.1,
+def drop_entities(triples_file, train_size=0.7, valid_size=0.1, test_size=0.2,
                   seed=0, types_file=None, has_def=False):
     """Drop entities from a graph, to create training, validation and test
     splits.
@@ -228,7 +228,7 @@ if __name__ == '__main__':
     parser.add_argument('--has_def', action='store_true', help='Whether the'
                         ' in file has defintions')
     parser.add_argument('--train_size', help='Fraction of entities used for'
-                        ' training.', default=0.8, type=float)
+                        ' training.', default=0.7, type=float)
     parser.add_argument('--seed', help='Random seed', default=0)
     args = parser.parse_args()
     
