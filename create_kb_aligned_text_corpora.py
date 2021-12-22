@@ -99,6 +99,9 @@ class Triples:
             self.ent_counts.update([h, t])
             self.pair_counts.update([(h, t)])
             self.rel_counts.update([r])
+        logger.info(f'Top-10 frequent entities: {self.ent_counts.most_common(10)}')
+        logger.info(f'Top-10 frequent arg pairs: {self.pair_counts.most_common(10)}')
+        logger.info(f'Top-10 frequent relations: {self.rel_counts.most_common(10)}')
     
     def query_one_hop_neighbors_by_entity(self, ent, h_or_t):
         sub_df = self.df[self.df[h_or_t] == ent]
@@ -177,7 +180,12 @@ class BioDSRECorpus:
                 yield idx, jsonl
                 idx += 1
     
-    def search_pos_and_neg_instances(self):
+    def search_pos_and_neg_instances(
+            self, 
+            raw_neg_sample_size: int = 50,
+            use_type_constraint: bool = True, 
+            use_arg_constraint: bool = True
+        ):
         """Read positive pairs from triples and search for them in size-2
         permutations of entities linked file, with mentions field. These
         pairs are created using the CUIs and matched against SNOMED-CT
@@ -190,8 +198,7 @@ class BioDSRECorpus:
             'train': list(), 'dev': list(), 'test': list()
         }
         
-        # list of all negatives regardless of the split; we call a pair
-        # negative if is 
+        # list of all negatives regardless of the split
         neg_idxs: List[Tuple[int, Tuple[str, str]]] = list()
         
         train_pairs = set(self.triples['train'].pair2rels.keys())
@@ -227,7 +234,7 @@ class BioDSRECorpus:
         # check if the resulting heads appeared in any of the heads
         # across all the splits and same for the tails.
         neg_pairs = set()
-        n_samples = 50
+        n_samples = raw_neg_sample_size
         
         for h, t in tqdm(pairs, desc='Creating candidate negative triples from positives ...'):
             # choose left or right side to corrupt
@@ -239,7 +246,7 @@ class BioDSRECorpus:
                 neg_heads = random.choices(heads_list, k=n_samples)
                 neg_pairs.update({(h_neg, t) for h_neg in neg_heads})
         
-        neg_pairs = neg_pairs - pairs - inv
+        neg_pairs = (neg_pairs - pairs) - inv
         
         ntr, nval, nte, nneg = 0, 0, 0, 0
         
@@ -256,9 +263,14 @@ class BioDSRECorpus:
                 for split in ['train', 'dev', 'test']:
                     with open(self.pos_fname(split), 'a') as wf:
                         save_items(pos_idxs[split], wf)
+                    # reset the split indices
+                    pos_idxs[split] = list()
                 
                 with open(self.neg_fname, 'a') as wf:
                     save_items(neg_idxs, wf)
+                
+                # reset the negative indices
+                neg_idxs = list()
             
             # Check if any entity is present more than once, drop this sentence
             # akin to: https://github.com/suamin/umls-medline-distant-re/blob/master/data_utils/link_entities.py#L45
@@ -278,8 +290,7 @@ class BioDSRECorpus:
             # first remove inverses, we are not modeling them
             matching_snomed_permutations = matching_snomed_permutations - inv
             
-            # consider only the cases with at least two SNOMED concepts appeared so a possible relation can be searched for
-            if len(matching_snomed_permutations) < 2:
+            if not matching_snomed_permutations:
                 continue
             
             # check if we have the matching pairs in any of the splits
@@ -303,24 +314,30 @@ class BioDSRECorpus:
             # can be considered for not applicable (NA) relations
             if not pruned_snomed_permutations:
                 
-                # we prune out pairs which do not respect the type constraint, i.e.,
-                # the negative pair's type (TYPE_HEAD, TYPE_TAIL) must appear in
-                # pairs' types from fact triples. Next, we check if such entities
-                # appeared as head / tail **somewhere** across all the splits of facts.
-                # this is regarded as argument-role constraint. This filters out
-                # many of easy NA samples, which model can learn by simple heuristics.
-                matching_types_based = {
-                    (h, t) for h, t in matching_snomed_permutations 
-                    if (self.cui2sty[h], self.cui2sty[t]) in types 
-                    and (h in heads) and (t in tails)
-                }
+                if use_type_constraint:
+                    # we prune out pairs which do not respect the type constraint, i.e.,
+                    # the negative pair's type (TYPE_HEAD, TYPE_TAIL) must appear in
+                    # pairs' types from fact triples. Next, we check if such entities
+                    # appeared as head / tail **somewhere** across all the splits of facts.
+                    # this is regarded as argument-role constraint. This filters out
+                    # many of easy NA samples, which model can learn by simple heuristics.
+                    matching_snomed_permutations = {
+                        (h, t) for h, t in matching_snomed_permutations 
+                        if (self.cui2sty[h], self.cui2sty[t]) in types 
+                    }
+                    
+                    if not matching_snomed_permutations:
+                        continue
                 
-                if not matching_types_based:
-                    continue
+                if use_arg_constraint:
+                    matching_snomed_permutations = {
+                        (h, t) for h, t in matching_snomed_permutations 
+                        if ((h in heads) and (t in tails)) 
+                    }
                 
                 # here, we consider the resultant pairs and see if they overlap
                 # with our candidates generated by simple head / tail entity replacements
-                candid_neg_pairs = matching_types_based.intersection(neg_pairs)
+                candid_neg_pairs = matching_snomed_permutations.intersection(neg_pairs)
                 
                 if not candid_neg_pairs:
                     continue
@@ -331,12 +348,15 @@ class BioDSRECorpus:
                 neg_idxs.append((idx, pair))
             
             else:
+                
                 if pairs_in_test:
                     pair = random.choice(list(pairs_in_test))
                     pos_idxs['test'].append((idx, pair))
+                
                 elif pairs_in_dev:
                     pair = random.choice(list(pairs_in_dev))
                     pos_idxs['dev'].append((idx, pair))
+                
                 elif pairs_in_train:
                     pair = random.choice(list(pairs_in_train))
                     pos_idxs['train'].append((idx, pair))
@@ -354,23 +374,77 @@ class BioDSRECorpus:
         head_mention, tail_mention = None, None
         # since multiple mentions can cause ambiguity, we only pick instances of single h/t mention
         if counts[h] == 1 and counts[t] == 1:
+            other_mentions = list()
             for item in jsonl['mentions']:
                 if item['id'] == h:
                     head_mention = item
-                if item['id'] == t:
+                elif item['id'] == t:
                     tail_mention = item
-            return head_mention, tail_mention
+                else:
+                    other_mentions.append(item)
+            return head_mention, tail_mention, other_mentions
         else:
             return None
     
-    def create_corpus(self, sample=1.0, neg_prop=0.7, dataset='med_distant19', size='L'):
+    ## THIS FUNCTION IS CRUCIAL AND MAKES DIFFERENCE! How NA samples are sent to per split
+    def create_corpus(
+            self, 
+            train_size: float = 0.7,
+            dev_size: float = 0.1,
+            sample: float = 1.0, 
+            neg_prop: float = 0.7, 
+            max_bag_size: int = 500,
+            include_other_mentions: bool = True,
+            dataset: str = 'med_distant19', 
+            size: str = 'L'
+        ):
         """Once positive and negative pairs have been read, we now create the corpora in
         OpenNRE format with different sizes and proportion of negative samples.
         
         """
         assert 0 < sample <= 1.0
         assert 0 < neg_prop <= 1.0
+        
         neg_idx2pair = read_idx_file(self.neg_fname)
+        
+        # divide negative pairs in train, dev, test
+        pair2neg_idxs = collections.defaultdict(list)
+        for neg_idx, pair in neg_idx2pair.items():
+            pair2neg_idxs[pair].append(neg_idx)
+        
+        logger.info(f'Found {len(pair2neg_idxs)} negative pairs')
+        logger.info('Pruning noisy (high-frequency) negative pairs ...')
+        
+        # remove highly-frequent (non-informative) pairs
+        for pair in list(pair2neg_idxs.keys()):
+            if len(pair2neg_idxs[pair]) > max_bag_size:
+                del pair2neg_idxs[pair]
+        logger.info(f'Number of negative pairs after pruning = {len(pair2neg_idxs)}')
+        
+        # remove inverse pairs
+        for pair in list(pair2neg_idxs.keys()):
+            h, t = pair
+            if (t, h) in pair2neg_idxs:
+                del pair2neg_idxs[(t, h)]
+        
+        logger.info(f'Number of negative pairs after removing inverses = {len(pair2neg_idxs)}')
+        
+        neg_pairs = sorted(list(pair2neg_idxs.keys()))
+        random.shuffle(neg_pairs)
+        
+        n = len(neg_pairs)
+        k = int(n * train_size)
+        j = k + int(n * dev_size)
+        
+        train_neg_pairs = neg_pairs[:k]
+        dev_neg_pairs = neg_pairs[k:j]
+        test_neg_pairs = neg_pairs[j:]
+        
+        logger.info(f'Found non-overlapping negative pairs:')
+        logger.info(f' ---- train = {len(train_neg_pairs)}')
+        logger.info(f' ---- dev = {len(dev_neg_pairs)}')
+        logger.info(f' ---- test = {len(test_neg_pairs)}')
+        
         counts = dict()
         
         for split in ['test', 'dev', 'train']:
@@ -378,28 +452,68 @@ class BioDSRECorpus:
             logger.info(f'Creating corpus for split {split} ...')
             
             pos_idx2pair = read_idx_file(self.pos_fname(split))
+            
+            pair2pos_idxs = collections.defaultdict(list)
+            for pos_idx, pair in pos_idx2pair.items():
+                pair2pos_idxs[pair].append(pos_idx)
+            
+            logger.info(f'Found {len(pair2pos_idxs)} positive pairs in `{split}`')
+            logger.info('Pruning noisy (high-frequency) positive pairs ...')
+            
+            # remove highly-frequent (non-informative) pairs
+            for pair in list(pair2pos_idxs.keys()):
+                if len(pair2pos_idxs[pair]) > max_bag_size:
+                    del pair2pos_idxs[pair]
+            
+            logger.info(f'Number of positive pairs after pruning = {len(pair2pos_idxs)}')
+            
             pos_idxs = list(pos_idx2pair.keys())
             random.shuffle(pos_idxs)
             
-            neg_idxs = list(neg_idx2pair.keys())
-            random.shuffle(neg_idxs)
-            
             # subsample the positive proportion to len(pos) * sample
             if sample < 1.0:
-                pos_idxs_split = set(random.sample(pos_idxs, int(len(pos_idxs) * sample)))
+                pos_idxs = set(random.sample(pos_idxs, int(len(pos_idxs) * sample)))
             else:
-                pos_idxs_split = set(pos_idxs)
+                pos_idxs = set(pos_idxs)
             
-            n_pos = len(pos_idxs_split)
-            n_total = int(n_pos / (1 - neg_prop))
-            n_neg = n_total - n_pos
-            neg_idxs_split = set(neg_idxs[:n_neg])
+            if split == 'train':
+                neg_pairs = train_neg_pairs
+            elif split == 'dev':
+                neg_pairs = dev_neg_pairs
+            else:
+                neg_pairs = test_neg_pairs
             
+            neg_idxs = list()
+            
+            for pair in neg_pairs:
+                neg_idxs.extend(pair2neg_idxs[pair])
+            
+            random.shuffle(neg_idxs)
+            
+            n_pos, n_neg = len(pos_idxs), len(neg_idxs)
+            n = n_pos + n_neg
+            # if pos sample size bigger than negatives
+            if n_pos > n_neg:
+                m = int(n_neg / neg_prop)
+                k_pos = m - n_neg
+                pos_idxs = set(list(pos_idxs)[:k_pos])
+            else:
+                m = int(n_pos / (1 - neg_prop))
+                k_neg = m - n_pos
+                neg_idxs = set(list(neg_idxs)[:k_neg])
+            
+            n_pos, n_neg = len(pos_idxs), len(neg_idxs)
+            pos_idxs = set(pos_idxs)
+            neg_idxs = set(neg_idxs)
+            
+            assert not pos_idxs.intersection(neg_idxs)
+            
+            logger.info(f'number of positive {n_pos} and negative {n_neg} idxs')
             triples = self.triples[split]
             
             # go through positive examples
             pair2rel = dict()
-            for pos_idx in pos_idxs_split:
+            for pos_idx in pos_idxs:
                 pair = pos_idx2pair[pos_idx]
                 rels = triples.pair2rels[pair]
                 # when labeled with multiple relations, consider a random one
@@ -409,39 +523,52 @@ class BioDSRECorpus:
                     rel = rels[0]
                 pair2rel[pair] = rel
             
+            logger.info(f'number of facts = {len(pair2rel)}')
+            
             corpus = list()
             n_pos, n_neg = 0, 0 # fact instances count and NA instances count
             
             for idx, jsonl in self.iter_entities_linked_file():
-                if idx in pos_idxs_split:
+                
+                if idx % 1000000 == 0 and idx > 0:
+                    logger.info(f'[Progress @ {idx}] Collected {len(corpus)} lines with pos: {n_pos} and neg: {n_neg}')
+                
+                if idx in pos_idxs:
                     pair = pos_idx2pair[idx]
                     ret = self.process_jsonl_with_pair(jsonl, pair)
                     if ret is None:
                         continue
-                    head_mention, tail_mention = ret
+                    head_mention, tail_mention, other_mentions = ret
                     rel = pair2rel[pair]
-                    corpus.append({
+                    example = {
                         'text': jsonl['text'],
                         'h': head_mention,
                         't': tail_mention,
                         'relation': rel
-                    })
+                    }
+                    if include_other_mentions:
+                        example['o'] = other_mentions
+                    corpus.append(example)
                     n_pos += 1
-                if idx in neg_idxs_split:
+                
+                elif idx in neg_idxs:
                     pair = neg_idx2pair[idx]
                     ret = self.process_jsonl_with_pair(jsonl, pair)
                     if ret is None:
                         continue
-                    head_mention, tail_mention = ret
-                    corpus.append({
+                    head_mention, tail_mention, other_mentions = ret
+                    example = {
                         'text': jsonl['text'],
                         'h': head_mention,
                         't': tail_mention,
                         'relation': 'NA'
-                    })
+                    }
+                    if include_other_mentions:
+                        example['o'] = other_mentions
+                    corpus.append(example)
                     n_neg += 1
             
-            logger.info(f'Collected {len(corpus)} lines with pos: {n_pos} and neg: {n_neg}')
+            logger.info(f'Final = Collected {len(corpus)} lines with pos: {n_pos} and neg: {n_neg}')
             
             output_fname = os.path.join(self.base_dir, f'{self.split}{dataset}-{size}_{split}.txt')
             logger.info(f'Saving the collected corpus to output file {output_fname} ...')
@@ -451,10 +578,6 @@ class BioDSRECorpus:
             with open(output_fname, 'w', encoding='utf-8', errors='ignore') as wf:
                 for line in corpus:
                     wf.write(json.dumps(line) + '\n')
-            
-            # remove these negative examples of split from the rest
-            for idx in neg_idxs_split:
-                del neg_idx2pair[idx]
             
             counts[split] = {'npos': n_pos, 'nneg': n_neg}
         
@@ -488,33 +611,78 @@ def main(args):
         'ind' if args.split == 'ind' else None,
         args.has_def
     )
+    
     # see if pos and neg linked files have been created before, simplz check for train
     check = all(list(
-        map(os.path.exists, [corpus.pos_fname(split) for split in ['train', 'dev', 'test']] + [corpus.neg_fname,])
+        map(
+            os.path.exists, 
+            [corpus.pos_fname(split) for split in ['train', 'dev', 'test']] + [corpus.neg_fname,])
     ))
+    
     log_file = f'corpus_{args.split}' + ('_def' if args.has_def else '') + f'_{args.size}.log'
     add_logging_handlers(logger, corpus.base_dir, log_file)
+    
     if not check:
         # this will take time, go grab 2 cups of coffee :)
-        ntr, nval, nte, nneg = corpus.search_pos_and_neg_instances()
+        ntr, nval, nte, nneg = corpus.search_pos_and_neg_instances(
+            args.raw_neg_sample_size,
+            args.use_type_constraint,
+            args.use_arg_constraint
+        )
+    
         logger.info(f'Positive and negative instances statistics ...')
         logger.info(f'--- train instances (+ve) = {ntr}')
         logger.info(f'--- dev instances (+ve) = {nval}')
         logger.info(f'--- test instances (+ve) = {nte}')
         logger.info(f'--- negative instances (NA) = {nneg}')
+    
     logger.info(f'Creating `{args.size}` corpus ...')
+    
     if args.size != 'O':
         if args.size == 'L':
-            counts = corpus.create_corpus(sample=1.0, neg_prop=0.7, size='L')
+            counts = corpus.create_corpus(
+                train_size=args.train_size,
+                dev_size=args.dev_size,
+                sample=1.0, 
+                neg_prop=args.neg_prop, 
+                max_bag_size=args.max_bag_size,
+                include_other_mentions=args.include_other_mentions,
+                size='L'
+            )
         elif args.size == 'M':
-            counts = corpus.create_corpus(sample=0.1, neg_prop=0.7, size='M')
+            counts = corpus.create_corpus(
+                train_size=args.train_size,
+                dev_size=args.dev_size,
+                sample=0.5, 
+                neg_prop=args.neg_prop, 
+                max_bag_size=args.max_bag_size,
+                include_other_mentions=args.include_other_mentions,
+                size='M'
+            )
         elif args.size == 'S':
-            counts = corpus.create_corpus(sample=0.05, neg_prop=0.7, size='S')
+            counts = corpus.create_corpus(
+                train_size=args.train_size,
+                dev_size=args.dev_size,
+                sample=0.1, 
+                neg_prop=args.neg_prop, 
+                max_bag_size=args.max_bag_size,
+                include_other_mentions=args.include_other_mentions,
+                size='S'
+            )
     else:
         counts = corpus.create_corpus(
-            sample=args.sample, neg_prop=args.neg_prop, dataset='med_distant19_x',size=args.size
+            train_size=args.train_size,
+            dev_size=args.dev_size,
+            sample=args.sample, 
+            neg_prop=args.neg_prop, 
+            max_bag_size=args.max_bag_size,
+            include_other_mentions=args.include_other_mentions,
+            dataset='med_distant19_x',
+            size=args.size
         )
+    
     logger.info(f'Final corpus statistics ...')
+    
     for split in counts:
         logger.info(f'{split} +ve and NA instances = {counts[split]}')
 
@@ -548,8 +716,36 @@ if __name__=="__main__":
         help="Sub-sample the triples for a given split to obtain different sized corpora."
     )
     parser.add_argument(
+        "--train_size", action="store", type=float, default=0.7,
+        help="The proportion of the data to consider for training."
+    )
+    parser.add_argument(
+        "--dev_size", action="store", type=float, default=0.1,
+        help="The proportion of the data to consider for development."
+    )
+    parser.add_argument(
         "--neg_prop", action="store", type=float, default=0.7,
         help="The NA rate for negative instances."
+    )
+    parser.add_argument(
+        "--raw_neg_sample_size", action="store", type=int, default=50,
+        help="The corrupted samples fom positive pairs that are needed to subset NA candidates."
+    )
+    parser.add_argument(
+        "--use_type_constraint", action="store_true",
+        help="Whether to apply type constraint on argument pair of NA type sentences."
+    )
+    parser.add_argument(
+        "--use_arg_constraint", action="store_true",
+        help="Whether to argument role constraint on NA type sentences."
+    )
+    parser.add_argument(
+        "--max_bag_size", action="store", type=int, default=500,
+        help="Remove pairs of bag sizes larger than this."
+    )
+    parser.add_argument(
+        "--include_other_mentions", action="store_true",
+        help="When creating corpora also include entity mentions other than head and tail."
     )
     
     args = parser.parse_args()
