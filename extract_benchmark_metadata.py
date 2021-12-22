@@ -26,7 +26,7 @@ def read_entity_rel_fact_na_maps(benchmark_split_file):
     facts_dict = dict()  # map (h, r, t) -> count
     na_dict = dict()     # map (h, NA, t) -> count 
     rel_dict = dict()    # map r -> count
-    bags = set()
+    bags = collections.defaultdict(set)
     
     instances = 0
     na_instances = 0
@@ -73,7 +73,10 @@ def read_entity_rel_fact_na_maps(benchmark_split_file):
             else:
                 rel_dict[r] += 1
             
-            bags.add((h, t))
+            if r == 'NA':
+                bags['neg'].add((h, t))
+            else:
+                bags['pos'].add((h, t))
             
             instances += 1
     
@@ -81,7 +84,9 @@ def read_entity_rel_fact_na_maps(benchmark_split_file):
     logger.info(f'# of instances = {instances}')
     logger.info(f'# of facts = {len(facts_dict)}')
     logger.info(f'# NA (%) = {na_percent:4.1f}%')
-    logger.info(f'# of bags = {len(bags)}')
+    logger.info(f'# of +ve bags = {len(bags["pos"])}')
+    logger.info(f'# of -ve bags = {len(bags["neg"])}')
+    logger.info(f'# of bags = {len(bags["pos"]) + len(bags["neg"])}')
     
     return entity_dict, rel_dict, facts_dict, na_dict
 
@@ -146,7 +151,7 @@ def main(args):
     base_dir = Path(args.benchmark_dir) / args.dataset
     
     rel2id = create_rel2id(base_dir, args.splits.split(','))
-    with open(Path(args.benchmark_dir) / args.dataset / 'rel2id.json', 'w') as wf:
+    with open(base_dir / f'{args.dataset}_rel2id.json', 'w') as wf:
         json.dump(rel2id, wf)
     
     # relevant paths
