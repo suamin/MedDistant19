@@ -233,12 +233,14 @@ def check_overlap(train, test, name):
     inter_triples = train_triples & test_triples
     union_triples = train_triples | test_triples
     
-    inter_triples_inv = train_pairs_inv & test_triples
-    union_triples_inv = train_pairs_inv | test_triples
+    inter_triples_inv = train_triples_inv & test_triples
+    union_triples_inv = train_triples_inv | test_triples
     
     inter_pairs = train_pairs & test_pairs
-    
     inter_pairs_inv = train_pairs_inv & test_pairs
+    
+    triples_to_remove = inter_triples | inter_triples_inv
+    pairs_to_remove = inter_pairs | inter_pairs_inv
     
     print(f'Training/{name} intersection size: {len(inter_triples)}')
     
@@ -258,6 +260,8 @@ def check_overlap(train, test, name):
     
     print(f'Number of {name} pairs in Inverse Training: '
                 f'{(len(inter_pairs_inv) / len(test_pairs)) * 100:.2f}%')
+    
+    return triples_to_remove, pairs_to_remove
 
 
 ##
