@@ -577,8 +577,7 @@ class BioDSRECorpus:
             canonical_or_aliases_only: bool = False,
             max_bag_size: int = 500,
             include_other_mentions: bool = True,
-            dataset: str = 'med_distant19', 
-            size: str = 'L'
+            dataset: str = 'med_distant'
         ):
         """Once positive and negative pairs have been read, we now create the corpora in
         OpenNRE format with different sizes and proportion of negative samples.
@@ -797,8 +796,7 @@ class BioDSRECorpus:
                     n_neg += 1
             
             logger.info(f'Final = Collected {len(corpus)} lines with pos: {n_pos} and neg: {n_neg}')
-            
-            output_fname = os.path.join(self.base_dir, f'{self.split}{dataset}-{size}_{split}.txt')
+            output_fname = os.path.join(self.base_dir, f'{self.split}{dataset}_{split}.txt')
             logger.info(f'Saving the collected corpus to output file {output_fname} ...')
             
             random.shuffle(corpus)
@@ -989,64 +987,20 @@ def main(args):
         logger.info(f'--- dev NA instances = {nnval}')
         logger.info(f'--- test NA instances = {nnte}')
     
-    logger.info(f'Creating `{args.size}` corpus ...')
+    logger.info(f'Creating corpus ...')
     
-    if args.size != 'O':
-        if args.size == 'L':
-            counts = corpus.create_corpus(
-                train_size=args.train_size,
-                dev_size=args.dev_size,
-                sample=1.0, 
-                use_sent_level_noise=args.use_sent_level_noise,
-                neg_prop=args.neg_prop, 
-                remove_mention_overlaps=args.remove_mention_overlaps,
-                canonical_or_aliases_only=args.canonical_or_aliases_only,
-                max_bag_size=args.max_bag_size,
-                include_other_mentions=args.include_other_mentions,
-                size='L'
-            )
-        
-        elif args.size == 'M':
-            counts = corpus.create_corpus(
-                train_size=args.train_size,
-                dev_size=args.dev_size,
-                sample=0.5, 
-                use_sent_level_noise=args.use_sent_level_noise,
-                neg_prop=args.neg_prop, 
-                remove_mention_overlaps=args.remove_mention_overlaps,
-                canonical_or_aliases_only=args.canonical_or_aliases_only,
-                max_bag_size=args.max_bag_size,
-                include_other_mentions=args.include_other_mentions,
-                size='M'
-            )
-        
-        elif args.size == 'S':
-            counts = corpus.create_corpus(
-                train_size=args.train_size,
-                dev_size=args.dev_size,
-                sample=0.1, 
-                use_sent_level_noise=args.use_sent_level_noise,
-                neg_prop=args.neg_prop, 
-                remove_mention_overlaps=args.remove_mention_overlaps,
-                canonical_or_aliases_only=args.canonical_or_aliases_only,
-                max_bag_size=args.max_bag_size,
-                include_other_mentions=args.include_other_mentions,
-                size='S'
-            )
-    else:
-        counts = corpus.create_corpus(
-            train_size=args.train_size,
-            dev_size=args.dev_size,
-            sample=args.sample, 
-            use_sent_level_noise=args.use_sent_level_noise,
-            neg_prop=args.neg_prop, 
-            remove_mention_overlaps=args.remove_mention_overlaps,
-            canonical_or_aliases_only=args.canonical_or_aliases_only,
-            max_bag_size=args.max_bag_size,
-            include_other_mentions=args.include_other_mentions,
-            dataset='med_distant19_x',
-            size=args.size
-        )
+    counts = corpus.create_corpus(
+        train_size=args.train_size,
+        dev_size=args.dev_size,
+        sample=args.sample, 
+        use_sent_level_noise=args.use_sent_level_noise,
+        neg_prop=args.neg_prop, 
+        remove_mention_overlaps=args.remove_mention_overlaps,
+        canonical_or_aliases_only=args.canonical_or_aliases_only,
+        max_bag_size=args.max_bag_size,
+        include_other_mentions=args.include_other_mentions,
+        dataset='med_distant'
+    )
     
     logger.info(f'Final corpus statistics ...')
     
@@ -1072,11 +1026,6 @@ if __name__=="__main__":
     parser.add_argument(
         "--has_def", action="store_true",
         help="Whether this split has definitions for the entities."
-    )
-    parser.add_argument(
-        "--size", action="store", type=str, default="L", choices=["S", "M", "L", "O"],
-        help="What size to create Small (`S`), Medium (`M`), Large (`L`) or Other (`O`)."
-        "For `O` use the --sample and --neg_prop flags."
     )
     parser.add_argument(
         "--sample", action="store", type=float, default=1.0,
