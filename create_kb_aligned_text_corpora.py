@@ -185,7 +185,7 @@ class BioDSRECorpus:
     
     def search_pos_and_neg_instances(
             self, 
-            raw_neg_sample_size: int = 50,
+            raw_neg_sample_size: int = 500,
             use_type_constraint: bool = True, 
             use_arg_constraint: bool = True
         ):
@@ -236,7 +236,7 @@ class BioDSRECorpus:
         inv = train_pairs_inv | dev_pairs_inv | test_pairs_inv
         types = train_pairs_types | dev_pairs_types | test_pairs_types
         
-        heads_list, tails_list = list(heads), list(tails)
+        entities = list(self.entities)
         
         ################################################################
         #
@@ -271,11 +271,11 @@ class BioDSRECorpus:
                 
                 # corrupt the **TAIL**
                 if h_or_t:
-                    neg_tails = random.choices(tails_list, k=n_samples)
+                    neg_tails = random.choices(entities, k=n_samples)
                     neg_pairs[split].update({(h, t_neg) for t_neg in neg_tails})
                 # corrupt the **HEAD**
                 else:
-                    neg_heads = random.choices(heads_list, k=n_samples)
+                    neg_heads = random.choices(entities, k=n_samples)
                     neg_pairs[split].update({(h_neg, t) for h_neg in neg_heads})
             
             # remove positive groups if created during negative sampling and inverses as well
@@ -331,9 +331,9 @@ class BioDSRECorpus:
             # check if any entity is present more than once, drop this sentence
             # akin to: https://github.com/suamin/umls-medline-distant-re/blob/master/data_utils/link_entities.py#L45
             cui2count = collections.Counter([item['id'] for item in jsonl['mentions']])
-            cuis = {cui for cui, count in cui2count.items() if count == 1}
-            if not cuis:
+            if sum(cui2count.values()) > len(cui2count):
                 continue
+            cuis = set(cui2count.keys())
             
             ################################################################
             #
@@ -420,6 +420,8 @@ class BioDSRECorpus:
                             pair = (ent1, ent2)
                         elif (ent2t, ent1t) in types:
                             pair = (ent2, ent1)
+                        else:
+                            continue
                         temp.add(pair)
                     
                     matching_snomed_permutations = temp
@@ -439,6 +441,8 @@ class BioDSRECorpus:
                             pair = (ent1, ent2)
                         elif ent1 in tails and ent2 in heads:
                             pair = (ent2, ent1)
+                        else:
+                            continue
                         temp.add(pair)
                     
                     matching_snomed_permutations = temp
@@ -484,15 +488,15 @@ class BioDSRECorpus:
                 #
                 ################################################################
                 if candid_neg_pairs_in_test:
-                    pair = random.choice(list(candid_neg_pairs))
+                    pair = random.choice(list(candid_neg_pairs_in_test))
                     neg_idxs['test'].append((idx, pair))
                 
                 elif candid_neg_pairs_in_dev:
-                    pair = random.choice(list(candid_neg_pairs))
+                    pair = random.choice(list(candid_neg_pairs_in_dev))
                     neg_idxs['dev'].append((idx, pair))
                 
                 elif candid_neg_pairs_in_train:
-                    pair = random.choice(list(candid_neg_pairs))
+                    pair = random.choice(list(candid_neg_pairs_in_train))
                     neg_idxs['train'].append((idx, pair))
             
             else:
@@ -513,6 +517,11 @@ class BioDSRECorpus:
                 elif pairs_in_train:
                     pair = random.choice(list(pairs_in_train))
                     pos_idxs['train'].append((idx, pair))
+            
+            h, t = pair
+            # safety check
+            assert h in cui2count
+            assert t in cui2count
         
         return ntr, nval, nte, nntr, nnval, nnte
     
@@ -530,8 +539,14 @@ class BioDSRECorpus:
         counts = collections.Counter(mention_ids)
         
         # make sure head and tail are present
-        assert h in counts
-        assert t in counts
+        try:
+            assert h in counts
+            assert t in counts
+        except:
+            print(h, t)
+            print(counts)
+            print(jsonl)
+            raise
         
         head_mention, tail_mention = None, None
         
@@ -809,8 +824,8 @@ class BioDSRECorpus:
         
         if remove_mention_overlaps:
             for src, tgt in [('train', 'dev'), ('train', 'test'), ('dev', 'test')]:
-                src_jsonl_fname = os.path.join(self.base_dir, f'{self.split}{dataset}-{size}_{src}.txt')
-                tgt_jsonl_fname = os.path.join(self.base_dir, f'{self.split}{dataset}-{size}_{tgt}.txt')
+                src_jsonl_fname = os.path.join(self.base_dir, f'{self.split}{dataset}_{src}.txt')
+                tgt_jsonl_fname = os.path.join(self.base_dir, f'{self.split}{dataset}_{tgt}.txt')
                 ################################################################
                 #
                 # REMOVE MENTION LEVEL OVERLAPS (IF ANY)
@@ -967,7 +982,7 @@ def main(args):
         )
     ))
     
-    log_file = f'corpus_{args.split}' + ('_def' if args.has_def else '') + f'_{args.size}.log'
+    log_file = f'corpus_{args.split}' + ('_def' if args.has_def else '') + '.log'
     add_logging_handlers(logger, corpus.base_dir, log_file)
     logger.info(vars(args))
     

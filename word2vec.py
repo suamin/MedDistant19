@@ -66,8 +66,8 @@ def train_and_dump_word2vec(
     for word in sorted(wv.vocab.keys()):
         vocab_item = wv.vocab[word]
         vector = wv.vectors[vocab_item.index]
-        word2id[word] = len(word2id)
         mat[len(word2id)] = vector
+        word2id[word] = len(word2id)
     
     mat_fname = Path(output_dir) / f'word2vec.pubmed2019.50d_mat.npy'
     map_fname = Path(output_dir) / f'word2vec.pubmed2019.50d_word2id.json'

@@ -102,13 +102,3 @@ if __name__=="__main__":
     pprint.pprint(vars(args))
     
     main(args)
-
-
-"""
-12/15/2021 10:27:15 - INFO - Searching for definitions of 347598 CUIs ...
-12/15/2021 10:27:15 - INFO - Found definitions for 37913 / 347598 CUIs
-12/15/2021 10:27:15 - INFO - CUIs missing in UMLS2020AA db = 847
-12/15/2021 10:27:15 - INFO - CUIs found in UMLS2020AA db but missing definition = 308838
-12/15/2021 10:27:18 - INFO - Subsetting the triples that have definitions ...
-12/15/2021 10:27:19 - INFO - Found triples with definitions 73461 out of 1076204
-"""
