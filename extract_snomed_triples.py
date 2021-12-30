@@ -50,9 +50,7 @@ semantic_types['SemGroup'] = [tui2sg[tui] for tui in semantic_types['TUI']]
 exclude_types = [
     'Cell', 'Cell Component', 'Embryonic Structure', 
     'Biomedical or Dental Material', 'Chemical Viewed Functionally', 
-    'Chemical Viewed Structurally', 'Regulation or Law', 
-    'Experimental Model of Disease', 'Molecular Function', 
-    'Cell Function', 'Genetic Function'
+    'Chemical Viewed Structurally', 'Regulation or Law' 
 ]
 include_groups = [
     'CHEM', 'DISO', 'ANAT', 'PROC', 'CONC', 'DEVI', 'PHEN', 'PHYS'
@@ -114,14 +112,15 @@ def filter_triplets_by_cuis(triplets, cui_iterable):
     return filtered
 
 
-def create_datasets(triplets, data_dir):
+def create_datasets(triplets, data_dir, use_ro_only=False):
     """
     2. no reciprocal relations at all
     """
     # Case 2: no reprical relations at all, so no leakage
     case2 = triplets[triplets['RELA'].isin(reciprocal_relations_dict.keys())]
-    rels = {k for k, v in broad_rel_types.items() if v == 'RO'}
-    case2 = case2[case2['RELA'].isin(rels)]
+    if use_ro_only:
+        rels = {k for k, v in broad_rel_types.items() if v == 'RO'}
+        case2 = case2[case2['RELA'].isin(rels)]
     case2 = case2.sample(frac=1, random_state=0)
     case2.to_csv(os.path.join(data_dir, 'all-triples.tsv'), sep='\t', header=None, index=None)
     
@@ -304,6 +303,7 @@ exclude_relations = [
 
 cleaned_relations = [r for r in relation_counts.index if r not in exclude_relations]
 reciprocal_relations = [r for r in cleaned_relations if r not in relatedness_relations]
+
 
 reciprocal_relations_dict = {
     "isa": "inverse_isa", 

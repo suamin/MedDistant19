@@ -186,6 +186,8 @@ class BioDSRECorpus:
     def search_pos_and_neg_instances(
             self, 
             raw_neg_sample_size: int = 500,
+            corrupt_arg: bool = True,
+            remove_multimentions_sents: bool = False,
             use_type_constraint: bool = True, 
             use_arg_constraint: bool = True
         ):
@@ -231,6 +233,7 @@ class BioDSRECorpus:
         pairs = train_pairs | dev_pairs | test_pairs
         heads, tails = zip(*pairs)
         heads, tails = set(heads), set(tails)
+        heads_list, tails_list = list(heads), list(tails)
         
         # combine all inverse pairs and types pairs
         inv = train_pairs_inv | dev_pairs_inv | test_pairs_inv
@@ -271,11 +274,17 @@ class BioDSRECorpus:
                 
                 # corrupt the **TAIL**
                 if h_or_t:
-                    neg_tails = random.choices(entities, k=n_samples)
+                    if corrupt_arg:
+                        neg_tails = random.choices(tails_list, k=n_samples)
+                    else:
+                        neg_tails = random.choices(entities, k=n_samples)
                     neg_pairs[split].update({(h, t_neg) for t_neg in neg_tails})
                 # corrupt the **HEAD**
                 else:
-                    neg_heads = random.choices(entities, k=n_samples)
+                    if corrupt_arg:
+                        neg_heads = random.choices(heads_list, k=n_samples)
+                    else:
+                        neg_heads = random.choices(entities, k=n_samples)
                     neg_pairs[split].update({(h_neg, t) for h_neg in neg_heads})
             
             # remove positive groups if created during negative sampling and inverses as well
@@ -325,14 +334,15 @@ class BioDSRECorpus:
             
             ################################################################
             #
-            # 2. REMOVE ENTITIES APPEARING MORE THAN ONCE
+            # 2. REMOVE ENTITIES APPEARING MORE THAN ONCE (IF SET)
             #
             ################################################################
+            cui2count = collections.Counter([item['id'] for item in jsonl['mentions']])
             # check if any entity is present more than once, drop this sentence
             # akin to: https://github.com/suamin/umls-medline-distant-re/blob/master/data_utils/link_entities.py#L45
-            cui2count = collections.Counter([item['id'] for item in jsonl['mentions']])
-            if sum(cui2count.values()) > len(cui2count):
-                continue
+            if remove_multimentions_sents:
+                if sum(cui2count.values()) > len(cui2count):
+                    continue
             cuis = set(cui2count.keys())
             
             ################################################################
@@ -539,14 +549,8 @@ class BioDSRECorpus:
         counts = collections.Counter(mention_ids)
         
         # make sure head and tail are present
-        try:
-            assert h in counts
-            assert t in counts
-        except:
-            print(h, t)
-            print(counts)
-            print(jsonl)
-            raise
+        assert h in counts
+        assert t in counts
         
         head_mention, tail_mention = None, None
         
@@ -989,9 +993,11 @@ def main(args):
     if not check:
         # this will take time, go grab 2 cups of coffee :)
         ntr, nval, nte, nntr, nnval, nnte = corpus.search_pos_and_neg_instances(
-            args.raw_neg_sample_size,
-            args.use_type_constraint,
-            args.use_arg_constraint
+            raw_neg_sample_size=args.raw_neg_sample_size,
+            corrupt_arg=args.corrupt_arg,
+            remove_multimentions_sents=args.remove_multimentions_sents,
+            use_type_constraint=args.use_type_constraint,
+            use_arg_constraint=args.use_arg_constraint
         )
         
         logger.info(f'Positive and negative instances statistics ...')
@@ -1063,6 +1069,10 @@ if __name__=="__main__":
         help="The corrupted samples fom positive pairs that are needed to subset NA candidates."
     )
     parser.add_argument(
+        "--corrupt_arg", action="store_true",
+        help="Corrupt entity should come from head / tail and not from full entity set."
+    )
+    parser.add_argument(
         "--use_type_constraint", action="store_true",
         help="Whether to apply type constraint on argument pair of NA type sentences."
     )
@@ -1073,6 +1083,10 @@ if __name__=="__main__":
     parser.add_argument(
         "--use_sent_level_noise", action="store_true", 
         help="Whether to generate sentence level noise."
+    )
+    parser.add_argument(
+        "--remove_multimentions_sents", action="store_true",
+        help="Remove sentences where entities occur more than once."
     )
     parser.add_argument(
         "--remove_mention_overlaps", action="store_true",

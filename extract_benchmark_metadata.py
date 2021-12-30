@@ -259,11 +259,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--benchmark_dir', type=str)
     parser.add_argument('--umls_dir', type=str)
-    parser.add_argument('--dataset', type=str, choices=[
-        'ind-med_distant19-L', 'ind-med_distant19-M', 'ind-med_distant19-S',  
-        'ind_def-med_distant19-L', 'ind_def-med_distant19-M', 'ind_def-med_distant19-S',  
-        'med_distant19-L', 'med_distant19-M', 'med_distant19-S'
-    ])
+    parser.add_argument('--dataset', type=str, default='ind-med_distant')
     parser.add_argument('--splits', type=str, default='train,dev,test')
     args = parser.parse_args()
     main(args)

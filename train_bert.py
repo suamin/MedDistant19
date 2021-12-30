@@ -36,7 +36,22 @@ def main(args):
         os.mkdir('ckpt')
     ckpt = 'ckpt/{}.pth.tar'.format(args.ckpt)
     
-    if args.train_method == 'bag':
+    if args.train_method == 'sent' and not args.only_test:
+        model = opennre.model.SoftmaxNN(sentence_encoder, len(rel2id), rel2id)
+        
+        # Define the whole training framework
+        framework = opennre.framework.SentenceRE(
+            train_path=args.train_file,
+            val_path=args.val_file,
+            test_path=args.test_file,
+            model=model,
+            ckpt=ckpt,
+            batch_size=args.batch_size,
+            max_epoch=args.max_epoch,
+            lr=args.lr,
+            opt='adamw'
+        )
+    else:
         # Define the model
         if args.aggr == 'att':
             model = opennre.model.BagAttention(sentence_encoder, len(rel2id), rel2id)
@@ -59,22 +74,6 @@ def main(args):
             lr=args.lr,
             opt="adamw",
             bag_size=args.bag_size
-        )
-    
-    elif args.train_method == 'sent':
-        model = opennre.model.SoftmaxNN(sentence_encoder, len(rel2id), rel2id)
-        
-        # Define the whole training framework
-        framework = opennre.framework.SentenceRE(
-            train_path=args.train_file,
-            val_path=args.val_file,
-            test_path=args.test_file,
-            model=model,
-            ckpt=ckpt,
-            batch_size=args.batch_size,
-            max_epoch=args.max_epoch,
-            lr=args.lr,
-            opt='adamw'
         )
     
     # train the model
