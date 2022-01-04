@@ -4,6 +4,10 @@
 
 --------------------------------------------------------------------------------
 
+*MedDistant19* is a distantly supervised biomedical relation extraction (Bio-DSRE) corpus obtained by aligning the PubMed MEDLINE abstracts from 2019 with the SNOMED-CT knowledge graph (KG) derived from the UMLS Metathesaurus 2019. Lack of benchmark, reproducibility, and other inconsistencies in previous works called for the curation of such a resource, leading to a more challenging benchmark that is of clinical relevance.
+
+--------------------------------------------------------------------------------
+
 ## UMLS-KB  
   
 We use `UMLS` as our knowledge base with `SNOMED_CT_US` subset-based installation using Metamorphosys. Please note that in order to have reproducible data splits, follow the steps as outlined below.  
