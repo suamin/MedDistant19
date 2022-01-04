@@ -11,7 +11,7 @@ import os
 import random
 import argparse
 import spacy
-
+import hashlib
 from pathlib import Path
 from tqdm import tqdm
 from scispacy.umls_linking import UmlsEntityLinker
@@ -25,23 +25,6 @@ logging.basicConfig(
     level=logging.INFO,
 )
 logger = logging.getLogger(__name__)
-
-
-# --------------------------------------------------
-# WARNING: please don't change this to another seed, 
-# required for reproducing the corpus when we have 
-# multiple pairs matching for a given sentence
-# --------------------------------------------------
-random.seed(0)
-
-
-def add_logging_handlers(logger, dir_name, fname):
-    log_file = os.path.join(dir_name, fname)
-    fh = logging.FileHandler(log_file)
-    fh.setFormatter(logging.Formatter(
-        '%(asctime)s - %(levelname)s - %(name)s -   %(message)s', '%m/%d/%Y %H:%M:%S'
-    ))
-    logger.addHandler(fh)
 
 
 class Triples:
@@ -74,8 +57,6 @@ class Triples:
                 self.triples.append((h, r, t))
                 self.entities.update([h, t])
                 self.relations.add(r)
-        
-        self.df = pd.DataFrame(self.triples, columns=['h', 'r', 't'])
     
     def set_rel_to_pairs(self):
         self.rel2pairs = collections.defaultdict(list)
@@ -106,32 +87,8 @@ class Triples:
         logger.info(f'Top-10 frequent arg pairs: {self.pair_counts.most_common(10)}')
         logger.info(f'Top-10 frequent relations: {self.rel_counts.most_common(10)}')
     
-    def query_one_hop_neighbors_by_entity(self, ent, h_or_t):
-        sub_df = self.df[self.df[h_or_t] == ent]
-        col = 't' if h_or_t == 'h' else 'h'
-        neighbors = list(zip(sub_df[col].tolist(), sub_df['r'].tolist()))
-        return neighbors
-    
-    def query_relational_context(self, h, r, t):
-        relational_context = list()
-        _, rels1 = zip(*self.query_one_hop_neighbors_by_entity(h, 'h'))
-        _, rels2 = zip(*self.query_one_hop_neighbors_by_entity(t, 't'))
-        relational_context.extend(rels1)
-        relational_context.extend(rels2)
-        relational_context = collections.Counter(relational_context)
-        del relational_context[r] # remove self
-        return relational_context
-    
-    def get(self, idx, with_context=False):
-        h, r, t = self.triples[idx]
-        return {
-            'h': h,
-            'r': r,
-            't': t,
-            'h_neighbors': self.query_one_hop_neighbors_by_entity(h, 'h') if with_context else None,
-            't_neighbors': self.query_one_hop_neighbors_by_entity(t, 't') if with_context else None,
-            'r_context': self.query_relational_context(h, r, t) if with_context else None
-        }
+    def __getitem__(self):
+        return self.triples[idx]
     
     def __len__(self):
         return len(self.triples)
@@ -168,8 +125,12 @@ class BioDSRECorpus:
             self.entities.update(self.triples[data_split].entities)
         
         base_dir = os.path.split(medline_entities_linked_fname)[0]
-        self.pos_fname = lambda split: os.path.join(base_dir, f'{self.split}{split}_pos_idxs_linked.tsv')
-        self.neg_fname = lambda split: os.path.join(base_dir, f'{self.split}{split}_neg_idxs_linked.tsv')
+        self.pos_fname = lambda split: os.path.join(
+            base_dir, f'{self.split}{split}_pos_idxs_linked.tsv'
+        )
+        self.neg_fname = lambda split: os.path.join(
+            base_dir, f'{self.split}{split}_neg_idxs_linked.tsv'
+        )
         self.base_dir = base_dir
     
     def iter_entities_linked_file(self):
@@ -187,7 +148,7 @@ class BioDSRECorpus:
             self, 
             raw_neg_sample_size: int = 500,
             corrupt_arg: bool = True,
-            remove_multimentions_sents: bool = False,
+            remove_multimentions_sents: bool = True,
             use_type_constraint: bool = True, 
             use_arg_constraint: bool = True
         ):
@@ -233,13 +194,13 @@ class BioDSRECorpus:
         pairs = train_pairs | dev_pairs | test_pairs
         heads, tails = zip(*pairs)
         heads, tails = set(heads), set(tails)
-        heads_list, tails_list = list(heads), list(tails)
+        heads_list, tails_list = sorted(list(heads)), sorted(list(tails))
         
         # combine all inverse pairs and types pairs
         inv = train_pairs_inv | dev_pairs_inv | test_pairs_inv
         types = train_pairs_types | dev_pairs_types | test_pairs_types
         
-        entities = list(self.entities)
+        entities = sorted(list(self.entities))
         
         ################################################################
         #
@@ -260,13 +221,13 @@ class BioDSRECorpus:
         neg_pairs = dict(train=set(), dev=set(), test=set())
         n_samples = raw_neg_sample_size
         
-        for split, pairs in (
+        for split, split_pairs in (
                 ('train', train_pairs), 
                 ('dev', dev_pairs), 
                 ('test', test_pairs)
             ):
             for h, t in tqdm(
-                pairs, 
+                sorted(list(split_pairs)), 
                 desc=f'Creating candidate negative triples from positives for {split} ...'
             ):
                 # choose left or right side to corrupt
@@ -289,6 +250,7 @@ class BioDSRECorpus:
             
             # remove positive groups if created during negative sampling and inverses as well
             neg_pairs[split] = (neg_pairs[split] - pairs) - inv
+            logger.info(f'collected {len(neg_pairs[split])} number of negative samples for {split}')
         
         ntr, nval, nte = 0, 0, 0
         nntr, nnval, nnte = 0, 0, 0
@@ -498,15 +460,15 @@ class BioDSRECorpus:
                 #
                 ################################################################
                 if candid_neg_pairs_in_test:
-                    pair = random.choice(list(candid_neg_pairs_in_test))
+                    pair = random.choice(sorted(list(candid_neg_pairs_in_test)))
                     neg_idxs['test'].append((idx, pair))
                 
                 elif candid_neg_pairs_in_dev:
-                    pair = random.choice(list(candid_neg_pairs_in_dev))
+                    pair = random.choice(sorted(list(candid_neg_pairs_in_dev)))
                     neg_idxs['dev'].append((idx, pair))
                 
                 elif candid_neg_pairs_in_train:
-                    pair = random.choice(list(candid_neg_pairs_in_train))
+                    pair = random.choice(sorted(list(candid_neg_pairs_in_train)))
                     neg_idxs['train'].append((idx, pair))
             
             else:
@@ -517,15 +479,15 @@ class BioDSRECorpus:
                 #
                 ################################################################
                 if pairs_in_test:
-                    pair = random.choice(list(pairs_in_test))
+                    pair = random.choice(sorted(list(pairs_in_test)))
                     pos_idxs['test'].append((idx, pair))
                 
                 elif pairs_in_dev:
-                    pair = random.choice(list(pairs_in_dev))
+                    pair = random.choice(sorted(list(pairs_in_dev)))
                     pos_idxs['dev'].append((idx, pair))
                 
                 elif pairs_in_train:
-                    pair = random.choice(list(pairs_in_train))
+                    pair = random.choice(sorted(list(pairs_in_train)))
                     pos_idxs['train'].append((idx, pair))
             
             h, t = pair
@@ -593,8 +555,12 @@ class BioDSRECorpus:
             use_sent_level_noise: bool = False,
             neg_prop: float = None, 
             remove_mention_overlaps: bool = True,
-            canonical_or_aliases_only: bool = False,
+            canonical_or_aliases_only: bool = True,
+            prune_frequent_bags: bool = True,
             max_bag_size: int = 500,
+            prune_frequent_mentions: bool = True,
+            max_mention_freq: int = 1000,
+            min_rel_freq: int = 1,
             include_other_mentions: bool = True,
             dataset: str = 'med_distant'
         ):
@@ -631,14 +597,14 @@ class BioDSRECorpus:
             # PRUNE HIGH-FREQUENCY POSITIVE (+ve) BAGS
             #
             ################################################################
-            # remove highly-frequent (non-informative) pairs
-            for pair in list(pair2pos_idxs.keys()):
-                if len(pair2pos_idxs[pair]) > max_bag_size:
-                    del pair2pos_idxs[pair]
+            if prune_frequent_bags:
+                # remove highly-frequent (non-informative) pairs
+                for pair in list(pair2pos_idxs.keys()):
+                    if len(pair2pos_idxs[pair]) > max_bag_size:
+                        del pair2pos_idxs[pair]
             
             logger.info(f'Number of positive pairs after pruning = {len(pair2pos_idxs)}')
             pos_idxs = list(pos_idx2pair.keys())
-            random.shuffle(pos_idxs)
             
             neg_idx2pair = read_idx_file(self.neg_fname(split))
             
@@ -654,14 +620,14 @@ class BioDSRECorpus:
             # PRUNE HIGH-FREQUENCY NEGATIVE (-ve) BAGS
             #
             ################################################################
-            # remove highly-frequent (non-informative) pairs
-            for pair in list(pair2neg_idxs.keys()):
-                if len(pair2neg_idxs[pair]) > max_bag_size:
-                    del pair2neg_idxs[pair]
+            if prune_frequent_bags:
+                # remove highly-frequent (non-informative) pairs
+                for pair in list(pair2neg_idxs.keys()):
+                    if len(pair2neg_idxs[pair]) > max_bag_size:
+                        del pair2neg_idxs[pair]
             
             logger.info(f'Number of negative pairs after pruning = {len(pair2neg_idxs)}')
             neg_idxs = list(neg_idx2pair.keys())
-            random.shuffle(neg_idxs)
             
             ################################################################
             #
@@ -670,6 +636,7 @@ class BioDSRECorpus:
             ################################################################
             # subsample the positive proportion to len(pos) * sample
             if sample < 1.0:
+                logger.info(f'Subsampling positive idxs ...')
                 pos_idxs = set(random.sample(pos_idxs, int(len(pos_idxs) * sample)))
             else:
                 pos_idxs = set(pos_idxs)
@@ -685,12 +652,12 @@ class BioDSRECorpus:
                 if n_pos > n_neg:
                     m = int(n_neg / neg_prop)
                     k_pos = m - n_neg
-                    pos_idxs = set(list(pos_idxs)[:k_pos])
+                    pos_idxs = set(sorted(list(pos_idxs))[:k_pos])
                 # else we have more negatives than positives
                 else:
                     m = int(n_pos / (1 - neg_prop))
                     k_neg = m - n_pos
-                    neg_idxs = set(list(neg_idxs)[:k_neg])
+                    neg_idxs = set(sorted(list(neg_idxs))[:k_neg])
             
             n_pos, n_neg = len(pos_idxs), len(neg_idxs)
             # for fast lookup
@@ -837,7 +804,39 @@ class BioDSRECorpus:
                 ################################################################
                 remove_overlapping_pairs(src_jsonl_fname, tgt_jsonl_fname, tgt)
         
-        return counts
+        if prune_frequent_mentions:
+            for split in ['train', 'dev', 'test']:
+                jsonl_fname = os.path.join(self.base_dir, f'{self.split}{dataset}_{split}.txt')
+                prune_by_type_mentions(
+                    jsonl_fname, self.cui2sty, max_freq=max_mention_freq
+                )
+        
+        # remove relations which have no sample in dev / test from train as well, use min rel freq as well
+        split2rels = dict()
+        for split in ['train', 'dev', 'test']:
+            rels = collections.Counter()
+            jsonl_fname = os.path.join(self.base_dir, f'{self.split}{dataset}_{split}.txt')
+            with open(jsonl_fname, encoding='utf-8', errors='ignore') as rf:
+                for line in rf:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    line = json.loads(line)
+                    rels.update([line['relation'],])
+            split2rels[split] = rels
+        
+        train_relations = {rel for rel, rel_count in split2rels['train'].items() if rel_count > min_rel_freq}
+        dev_relations = {rel for rel, rel_count in split2rels['dev'].items() if rel_count > min_rel_freq}
+        test_relations = {rel for rel, rel_count in split2rels['test'].items() if rel_count > min_rel_freq}
+        rels_to_discard = (train_relations - dev_relations) | (train_relations - test_relations)
+        
+        for split in ['train', 'dev', 'test']:
+            rels = collections.Counter()
+            jsonl_fname = os.path.join(self.base_dir, f'{self.split}{dataset}_{split}.txt')
+            n_pos, n_neg = prune_by_rels(jsonl_fname, rels_to_discard)
+            
+            logger.info(f'Final corpus statistics ...')
+            logger.info(f'{split}: {n_pos} +ve and {n_neg} NA instances')
 
 
 def save_items(items, wf):
@@ -968,6 +967,93 @@ def check_overlap(train_triples, test_triples, name):
     return triples_to_remove, pairs_to_remove
 
 
+def prune_by_type_mentions(benchmark_split_file, cui2sty, max_freq=1000):
+    sty2mention = collections.defaultdict(set)
+
+    logging.info(f'Reading file {benchmark_split_file} for type mentions-based pruning ...')
+    
+    with open(benchmark_split_file, encoding="utf-8", errors="ignore") as rf:
+        for line in rf:
+            line = line.strip()
+            if not line:
+                continue
+            line = json.loads(line)
+            
+            h, t = line["h"]["id"], line["t"]["id"]
+            h_n, t_n = line["h"]["name"], line["t"]["name"]
+            r = line["relation"]
+            ht = cui2sty[h]
+            tt = cui2sty[t]
+            if ht not in sty2mention:
+                sty2mention[ht] = collections.Counter()
+            if tt not in sty2mention:
+                sty2mention[tt] = collections.Counter()
+            sty2mention[ht].update([h_n.lower()])
+            sty2mention[tt].update([t_n.lower()])
+    
+    mentions_to_discard = set()
+    for sty, mentions in sty2mention.items():
+        for mention, freq in mentions.most_common():
+            if freq > max_freq: # 1000
+                mentions_to_discard.add(mention)
+    
+    new_jsonls = list()
+    count = 0
+    old = 0
+    with open(benchmark_split_file, encoding="utf-8", errors="ignore") as rf:
+        for line in rf:
+            line = line.strip()
+            if not line:
+                continue
+            line = json.loads(line)
+            old += 1 
+            h_n, t_n = line["h"]["name"], line["t"]["name"]
+            if h_n.lower() in mentions_to_discard or t_n.lower() in mentions_to_discard:
+                count += 1
+                continue
+            new_jsonls.append(line)
+    
+    logger.info(f'removed {count} lines from total of {old} !')
+    
+    with open(benchmark_split_file, 'w', encoding="utf-8", errors="ignore") as wf:
+        for line in new_jsonls:
+            wf.write(json.dumps(line) + '\n')
+
+
+def prune_by_rels(benchmark_split_file, rels_to_discard):
+    logging.info(f'Reading file {benchmark_split_file} for relations pruning ...')
+    
+    new_jsonls = list()
+    n_pos, n_neg = 0, 0
+    with open(benchmark_split_file, encoding="utf-8", errors="ignore") as rf:
+        for line in rf:
+            line = line.strip()
+            if not line:
+                continue
+            line = json.loads(line)
+            if line["relation"] in rels_to_discard:
+                continue
+            if line['relation'] == 'NA':
+                n_neg += 1
+            else:
+                n_pos += 1
+            new_jsonls.append(line)
+    
+    with open(benchmark_split_file, 'w', encoding="utf-8", errors="ignore") as wf:
+        for line in new_jsonls:
+            wf.write(json.dumps(line) + '\n')
+    
+    return n_pos, n_neg
+
+
+def add_logging_handlers(logger, dir_name, fname):
+    log_file = os.path.join(dir_name, fname)
+    fh = logging.FileHandler(log_file)
+    fh.setFormatter(logging.Formatter(
+        '%(asctime)s - %(levelname)s - %(name)s -   %(message)s', '%m/%d/%Y %H:%M:%S'
+    ))
+    logger.addHandler(fh)
+
 
 def main(args):
     corpus = BioDSRECorpus(
@@ -990,6 +1076,13 @@ def main(args):
     add_logging_handlers(logger, corpus.base_dir, log_file)
     logger.info(vars(args))
     
+    # --------------------------------------------------
+    # WARNING: please don't change this to another seed, 
+    # required for reproducing the corpus when we have 
+    # multiple pairs matching for a given sentence
+    # --------------------------------------------------
+    random.seed(0)
+
     if not check:
         # this will take time, go grab 2 cups of coffee :)
         ntr, nval, nte, nntr, nnval, nnte = corpus.search_pos_and_neg_instances(
@@ -1010,7 +1103,7 @@ def main(args):
     
     logger.info(f'Creating corpus ...')
     
-    counts = corpus.create_corpus(
+    corpus.create_corpus(
         train_size=args.train_size,
         dev_size=args.dev_size,
         sample=args.sample, 
@@ -1018,15 +1111,14 @@ def main(args):
         neg_prop=args.neg_prop, 
         remove_mention_overlaps=args.remove_mention_overlaps,
         canonical_or_aliases_only=args.canonical_or_aliases_only,
+        prune_frequent_bags=args.prune_frequent_bags,
         max_bag_size=args.max_bag_size,
+        prune_frequent_mentions=args.prune_frequent_mentions,
+        max_mention_freq=args.max_mention_freq,
+        min_rel_freq=args.min_rel_freq,
         include_other_mentions=args.include_other_mentions,
         dataset='med_distant'
     )
-    
-    logger.info(f'Final corpus statistics ...')
-    
-    for split in counts:
-        logger.info(f'{split} +ve and NA instances = {counts[split]}')
 
 
 if __name__=="__main__":
@@ -1073,6 +1165,10 @@ if __name__=="__main__":
         help="Corrupt entity should come from head / tail and not from full entity set."
     )
     parser.add_argument(
+        "--remove_multimentions_sents", action="store_true",
+        help="Remove sentences where entities occur more than once."
+    )
+    parser.add_argument(
         "--use_type_constraint", action="store_true",
         help="Whether to apply type constraint on argument pair of NA type sentences."
     )
@@ -1085,8 +1181,12 @@ if __name__=="__main__":
         help="Whether to generate sentence level noise."
     )
     parser.add_argument(
-        "--remove_multimentions_sents", action="store_true",
-        help="Remove sentences where entities occur more than once."
+        "--prune_frequent_bags", action="store_true",
+        help="Whether to prune most frequent bags."
+    )
+    parser.add_argument(
+        "--max_bag_size", action="store", type=int, default=500,
+        help="Remove pairs of bag sizes larger than this."
     )
     parser.add_argument(
         "--remove_mention_overlaps", action="store_true",
@@ -1097,8 +1197,16 @@ if __name__=="__main__":
         help="Whether to only keep the mentions which are in canonical or aliases form from UMLS."
     )
     parser.add_argument(
-        "--max_bag_size", action="store", type=int, default=500,
-        help="Remove pairs of bag sizes larger than this."
+        "--prune_frequent_mentions", action="store_true",
+        help="Whether to prune most frequent mentions."
+    )
+    parser.add_argument(
+        "--max_mention_freq", action="store", type=int, default=1000,
+        help="Maximum allowed mentions count if pruning frequent mentions."
+    )
+    parser.add_argument(
+        "--min_rel_freq", action="store", type=int, default=1,
+        help="Keep relations with sentences grater than this."
     )
     parser.add_argument(
         "--include_other_mentions", action="store_true",
@@ -1111,3 +1219,46 @@ if __name__=="__main__":
     pprint.pprint(vars(args))
     
     main(args)
+
+
+"""
+
+$python create_kb_aligned_text_corpora.py --medline_entities_linked_fname MEDLINE/medline_pubmed_2019_entity_linked.jsonl --triples_dir UMLS --split ind --sample 0.1 --train_size 0.7 --dev_size 0.1 --raw_neg_sample_size 500 --corrupt_arg --remove_multimentions_sents --use_type_constraint --use_arg_constraint --remove_mention_overlaps --canonical_or_aliases_only --prune_frequent_mentions --max_mention_freq 1000 --min_rel_freq 1 --prune_frequent_mentions --prune_frequent_bags --max_bag_size 500
+
+"""
+
+"""
+
+TODOs:
+
+- (reproducibility) re-run corpora creation command multiple times and see if reproducing
+  + (debugging) diagnose the cause of slight variations in mined negative samples over multiples runs
+- (ablation) once fixed corpus generated, show variations:
+  + of various random negatives: 
+    (+ corrupt arg) 
+    (+ type constraint) 
+    (+ arg constraint)
+  + inductive vs. transductive, when mentions are unseen vs. seen in dev/test
+- (experiment) show variations of a single fixed BERT model with:
+  + replacing mentions by semantic types
+  + replacing mentions by arg types
+  + using mention only with entities ordered preserved
+  + using mention only but using fixed arg pair order from KB
+  -- these are akin to:
+     + Table 1. cf. https://arxiv.org/pdf/2010.01923.pdf
+     + Table 3. cf. https://aclanthology.org/2020.aacl-main.75.pdf
+  * we do this to show what kind of insights of general domain carry over to biomedical domain
+- (experiment) show variations of using sentence-level vs. bag-level training
+  * we do this to check if we also experience such significant gap between bag and sent-level BERT training,
+    an insight considered common in general domain promoting the use of BERTology at sent-level
+- (experiment) run various bio-encoders SciBERT, BioBERT, ClinicalBERT etc. to show what impact we experience,
+  hypothesize if knowledge is explitcitly encoded (such as in KeBioLM) is beneficial to this task vs. implicit
+  as in BioBERT
+- (experiment) showcase the impact of various auxiliary task, i.e., entity type / group classification, KGC, etc.
+- (experiment) showcase if explicitly adding KGE helps, e.g. trained with kbc-lm, we can consider one model
+- (evaluation) besides reporting commong AUC, F1 scores and P@k values:
+  + use the semantic relation types of entities and report performance per entitiy type
+  + use the relation to type (1-1, 1-M, M-1, ...) information and report performance on each catgeory
+  + similar to AMIL, report performance on rare-triples
+
+"""
