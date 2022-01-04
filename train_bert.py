@@ -20,23 +20,8 @@ def set_seed(seed):
     torch.cuda.manual_seed_all(seed)
 
 
-def main(args):
-    rel2id = json.load(open(args.rel2id_file))
-    sentence_encoder = opennre.encoder.BERTEntityEncoder(
-        max_length=args.max_length, 
-        pretrain_path=args.pretrain_path,
-        mask_entity=False, ## CHANGE ME: mask entity (ME)
-        keep_mention_only=False ## CHANGE ME: only entity mention (OE)
-    )
-    # sentence_encoder.bert.init_weights() ## CHANGE ME: random BioBERT
-    # Some basic settings
-    root_path = '.'
-    sys.path.append(root_path)
-    if not os.path.exists('ckpt'):
-        os.mkdir('ckpt')
-    ckpt = 'ckpt/{}.pth.tar'.format(args.ckpt)
-    
-    if args.train_method == 'sent' and not args.only_test:
+def get_framework(args, sentence_encoder, rel2id, ckpt, method='bag'):
+    if method == 'sent':
         model = opennre.model.SoftmaxNN(sentence_encoder, len(rel2id), rel2id)
         
         # Define the whole training framework
@@ -51,7 +36,9 @@ def main(args):
             lr=args.lr,
             opt='adamw'
         )
+    
     else:
+    
         # Define the model
         if args.aggr == 'att':
             model = opennre.model.BagAttention(sentence_encoder, len(rel2id), rel2id)
@@ -76,9 +63,35 @@ def main(args):
             bag_size=args.bag_size
         )
     
+    return framework, model
+
+
+def main(args):
+    rel2id = json.load(open(args.rel2id_file))
+    sentence_encoder = opennre.encoder.BERTEntityEncoder(
+        max_length=args.max_length, 
+        pretrain_path=args.pretrain_path,
+        mask_entity=False, ## CHANGE ME: mask entity (ME)
+        keep_mention_only=False ## CHANGE ME: only entity mention (OE)
+    )
+    # sentence_encoder.bert.init_weights() ## CHANGE ME: random BioBERT
+    # Some basic settings
+    root_path = '.'
+    sys.path.append(root_path)
+    if not os.path.exists('ckpt'):
+        os.mkdir('ckpt')
+    ckpt = 'ckpt/{}.pth.tar'.format(args.ckpt)
+    
+    if args.train_method == 'sent':
+        framework, model = get_framework(args, sentence_encoder, rel2id, ckpt, 'sent')
+    else:
+        framework, model = get_framework(args, sentence_encoder, rel2id, ckpt, 'bag')
+    
     # train the model
     if not args.only_test:
         framework.train_model(args.metric)
+        if args.train_method == 'sent': # test with bag setup
+            framework, model = get_framework(args, sentence_encoder, rel2id, ckpt, 'bag')
     
     # Test the model
     framework.load_state_dict(torch.load(ckpt)['state_dict'])

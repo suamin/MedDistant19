@@ -50,7 +50,9 @@ semantic_types['SemGroup'] = [tui2sg[tui] for tui in semantic_types['TUI']]
 exclude_types = [
     'Cell', 'Cell Component', 'Embryonic Structure', 
     'Biomedical or Dental Material', 'Chemical Viewed Functionally', 
-    'Chemical Viewed Structurally', 'Regulation or Law' 
+    'Chemical Viewed Structurally', 'Regulation or Law',
+    'Experimental Model of Disease', 'Molecular Function', 
+    'Cell Function', 'Genetic Function'
 ]
 include_groups = [
     'CHEM', 'DISO', 'ANAT', 'PROC', 'CONC', 'DEVI', 'PHEN', 'PHYS'
@@ -112,7 +114,7 @@ def filter_triplets_by_cuis(triplets, cui_iterable):
     return filtered
 
 
-def create_datasets(triplets, data_dir, use_ro_only=False):
+def create_datasets(triplets, data_dir, use_ro_only=True):
     """
     2. no reciprocal relations at all
     """
@@ -396,10 +398,10 @@ reciprocal_relations_dict = {
     "direct_site_of": "has_direct_site", 
     "time_aspect_of": "has_time_aspect", 
     "measurement_method_of": "has_measurement_method", 
-    "same_as": "same_as", 
-    "possibly_equivalent_to": "possibly_equivalent_to", 
-    "associated_with": "associated_with", 
-    "temporally_related_to": "temporally_related_to"
+    # "same_as": "same_as", 
+    # "possibly_equivalent_to": "possibly_equivalent_to", 
+    # "associated_with": "associated_with", 
+    # "temporally_related_to": "temporally_related_to"
 }
 
 
