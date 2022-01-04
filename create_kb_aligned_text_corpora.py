@@ -11,7 +11,7 @@ import os
 import random
 import argparse
 import spacy
-import hashlib
+
 from pathlib import Path
 from tqdm import tqdm
 from scispacy.umls_linking import UmlsEntityLinker
@@ -1219,46 +1219,3 @@ if __name__=="__main__":
     pprint.pprint(vars(args))
     
     main(args)
-
-
-"""
-
-$python create_kb_aligned_text_corpora.py --medline_entities_linked_fname MEDLINE/medline_pubmed_2019_entity_linked.jsonl --triples_dir UMLS --split ind --sample 0.1 --train_size 0.7 --dev_size 0.1 --raw_neg_sample_size 500 --corrupt_arg --remove_multimentions_sents --use_type_constraint --use_arg_constraint --remove_mention_overlaps --canonical_or_aliases_only --prune_frequent_mentions --max_mention_freq 1000 --min_rel_freq 1 --prune_frequent_mentions --prune_frequent_bags --max_bag_size 500
-
-"""
-
-"""
-
-TODOs:
-
-- (reproducibility) re-run corpora creation command multiple times and see if reproducing
-  + (debugging) diagnose the cause of slight variations in mined negative samples over multiples runs
-- (ablation) once fixed corpus generated, show variations:
-  + of various random negatives: 
-    (+ corrupt arg) 
-    (+ type constraint) 
-    (+ arg constraint)
-  + inductive vs. transductive, when mentions are unseen vs. seen in dev/test
-- (experiment) show variations of a single fixed BERT model with:
-  + replacing mentions by semantic types
-  + replacing mentions by arg types
-  + using mention only with entities ordered preserved
-  + using mention only but using fixed arg pair order from KB
-  -- these are akin to:
-     + Table 1. cf. https://arxiv.org/pdf/2010.01923.pdf
-     + Table 3. cf. https://aclanthology.org/2020.aacl-main.75.pdf
-  * we do this to show what kind of insights of general domain carry over to biomedical domain
-- (experiment) show variations of using sentence-level vs. bag-level training
-  * we do this to check if we also experience such significant gap between bag and sent-level BERT training,
-    an insight considered common in general domain promoting the use of BERTology at sent-level
-- (experiment) run various bio-encoders SciBERT, BioBERT, ClinicalBERT etc. to show what impact we experience,
-  hypothesize if knowledge is explitcitly encoded (such as in KeBioLM) is beneficial to this task vs. implicit
-  as in BioBERT
-- (experiment) showcase the impact of various auxiliary task, i.e., entity type / group classification, KGC, etc.
-- (experiment) showcase if explicitly adding KGE helps, e.g. trained with kbc-lm, we can consider one model
-- (evaluation) besides reporting commong AUC, F1 scores and P@k values:
-  + use the semantic relation types of entities and report performance per entitiy type
-  + use the relation to type (1-1, 1-M, M-1, ...) information and report performance on each catgeory
-  + similar to AMIL, report performance on rare-triples
-
-"""

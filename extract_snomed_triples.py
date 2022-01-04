@@ -40,6 +40,8 @@ semantic_groups.columns = ['SG', 'SG_string', 'TUI', 'STY']
 semantic_groups = semantic_groups.set_index('TUI')
 
 tui2sg = semantic_groups['SG'].to_dict()
+with open(os.path.join(data_dir, 'sty2sg.json'), 'w') as fp:
+    json.dump(tui2sg, fp)
 semantic_types['SemGroup'] = [tui2sg[tui] for tui in semantic_types['TUI']]
 
 ##

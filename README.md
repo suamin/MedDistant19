@@ -8,6 +8,23 @@
 
 --------------------------------------------------------------------------------
 
+## Contents (todo)
+
+- [Website](#todo)
+- [Overview](#overview)
+- [Getting Started](#requirements)
+  - [Requirements](#requirements)
+  - [MedDistant19 Dataset](#few-nerd-dataset)
+    - [Get the Data](#get-the-data)
+    - [Data Format](Data-format)
+  - [Structure](#structure)
+  - [Key Implementations](#Key-Implementations)
+    - [OpenNRE](#Sampler)
+  - [How to Run](#How-to-Run)
+- [Citation](#Citation)
+- [Connection](#Connection)
+
+
 ## UMLS-KB  
   
 We use `UMLS` as our knowledge base with `SNOMED_CT_US` subset-based installation using Metamorphosys. Please note that in order to have reproducible data splits, follow the steps as outlined below.  
