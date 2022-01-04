@@ -1,5 +1,8 @@
-# MedDistant19
+<p align="center">
+  <img width="90%" src="https://https://github.com/suamin/MedDistant19/blob/main/imgs/meddistant19.png" />
+</p>
 
+--------------------------------------------------------------------------------
 
 ## UMLS-KB  
   
