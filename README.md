@@ -14,7 +14,7 @@
 - [Overview](#overview)
 - [Getting Started](#requirements)
   - [Requirements](#requirements)
-  - [MedDistant19 Dataset](#few-nerd-dataset)
+  - [MedDistant19 Dataset](#med-distant-dataset)
     - [Get the Data](#get-the-data)
     - [Data Format](Data-format)
   - [Structure](#structure)
