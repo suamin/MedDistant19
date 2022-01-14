@@ -8,23 +8,6 @@
 
 --------------------------------------------------------------------------------
 
-## Contents (todo)
-
-- [Website](#todo)
-- [Overview](#overview)
-- [Getting Started](#requirements)
-  - [Requirements](#requirements)
-  - [MedDistant19 Dataset](#med-distant-dataset)
-    - [Get the Data](#get-the-data)
-    - [Data Format](Data-format)
-  - [Structure](#structure)
-  - [Key Implementations](#Key-Implementations)
-    - [OpenNRE](#Sampler)
-  - [How to Run](#How-to-Run)
-- [Citation](#Citation)
-- [Connection](#Connection)
-
-
 ## UMLS-KB  
   
 We use `UMLS` as our knowledge base with `SNOMED_CT_US` subset-based installation using Metamorphosys. Please note that in order to have reproducible data splits, follow the steps as outlined below.  
@@ -42,7 +25,7 @@ Go to `UMLS_DOWNLOAD_DIR/2019AB-full` and use the script `run*` depending on you
 Run the script `init_config.py` to set the path values in the `config.prop` file provided in this directory.  
   
 ```  
-python ../init_config.py --src SOURCE --dst DESTINATION  
+python init_config.py --src SOURCE --dst DESTINATION  
 ```  
   
 Now, use this configuration file in MetamorphoSys for installing the `SNOMED_CT_US` by selecting the `Open Configuration` option.  
@@ -61,12 +44,12 @@ Once you have downloaded all the files, please match the resulting MD5 hash valu
   
 Preprocess UMLS files with the script:  
 ```bash  
-sh ../scripts/umls_preprocess.sh  
+sh scripts/umls_preprocess.sh  
 ```  
 ### Transductive Split  
 Now, extract the relevant triples data:  
 ```bash  
-sh ../scripts/snomed_triples.sh  
+sh scripts/snomed_triples.sh  
 ```  
 This will create several files but the more important ones are `train.tsv`, `dev.tsv` and `test.tsv`. These splits are transductive in nature, i.e., the entities appearing in dev and test sets have appeared in the training set.  
   
@@ -74,13 +57,13 @@ This will create several files but the more important ones are `train.tsv`, `dev
 #### A. Inductive Split  
 Inductive split refers to the creation of dev and test sets where entities were not seen during training. To create simple inductive split, use:  
 ```  
-sh ../scripts/inductive_split.sh  
+sh scripts/inductive_split.sh  
 ```  
 This will create split files `ind-train.tsv`, `ind-dev.tsv` and `ind-test.tsv` files.  
 #### B. Inductive Split with Definitions  
 Next, we will create a second version of inductive split that has definitions available in `UMLS2020AA` kb available from SciSpacy. For this, use the script:  
 ```  
-sh ../scripts/inductive_split_with_def.sh  
+sh scripts/inductive_split_with_def.sh  
 ```  
 This will create split files `ind_def-train.tsv`, `ind_def-dev.tsv` and `ind_def-test.tsv` files.  
   
@@ -103,58 +86,37 @@ This will result extract the file `medline_pubmed_2019_entity_linked.jsonl` wher
 {"text": "A 25 % body surface area , full-thickness scald wound was produced in anesthetized animals .", "mentions": [{"id": "C0005902", "pos": [7, 24], "name": "body surface area"}, {"id": "C2733564", "pos": [27, 47], "name": "full-thickness scald"}, {"id": "C0043250", "pos": [48, 53], "name": "wound"}, {"id": "C1720436", "pos": [70, 82], "name": "anesthetized"}, {"id": "C0003062", "pos": [83, 90], "name": "animals"}]}
 ```
 
-Assuming that you have already followed the instructions in the UMLS folder, we can create the benchmark splits in OpenNRE format. We create three kind of corpora, transductive, inductive and inductive with definitions. Each benchmark can further be created with different sizes `S` (small), `M` (medium) and `L` (large). 
+Assuming that you have already followed the instructions in the UMLS folder, we can create the benchmark splits in OpenNRE format. We create two kind of corpora, transductive, inductive.
 
-### Transductive
+### Inductive
 
-The example command below creates the the benchmark `med_distant19-L` with the split files `med_distant19-L_train.txt`, `med_distant19-dev_train.txt` and `med_distant19-L_test.txt` in `MEDLINE` directory:
+The example command below creates the the benchmark `med_distant19` with the split files `med_distant19_train.txt`, `med_distant19_dev.txt` and `med_distant19_test.txt` in `MEDLINE` directory:
 
 ```bash
-python ../create_kb_aligned_text_corpora.py \
-    --medline_entities_linked_fname ../MEDLINE/medline_pubmed_2019_entity_linked.jsonl \
-    --triples_dir ../UMLS \
-    --split trans \
-    --size L
+python create_kb_aligned_text_corpora.py --medline_entities_linked_fname MEDLINE/medline_pubmed_2019_entity_linked.jsonl --triples_dir UMLS --split trans --sample 0.1 --train_size 0.7 --dev_size 0.1 --raw_neg_sample_size 500 --corrupt_arg --remove_multimentions_sents --use_type_constraint --use_arg_constraint --remove_mention_overlaps --canonical_or_aliases_only --prune_frequent_mentions --max_mention_freq 1000 --min_rel_freq 1 --prune_frequent_mentions --prune_frequent_bags --max_bag_size 500
 ```
 
 You can move these files to the folder `benchmark`:
 
 ```bash
-mv ../MEDLINE/med_distant19-L_*.txt benchmark/med_distant19-L/
+mv ../MEDLINE/med_distant19_*.txt benchmark/med_distant19/
 ```
 
-Please match the md5 hash values provided in `benchmark/med_distant19-L`. We can extract several relevant files (semantic types, semantic groups, relation categories etc.) from `benchmark/med_distant19-L` with:
+Please match the md5 hash values provided in `benchmark/med_distant19`. We can extract several relevant files (semantic types, semantic groups, relation categories etc.) from `benchmark/med_distant19` with:
 
 ```bash
-python ../extract_benchmark_metadata.py \
-    --benchmark_dir ../benchmark \
-    --umls_dir ../UMLS \
-    --dataset ../benchmark/med_distant19-L
+python extract_benchmark_metadata.py \
+    --benchmark_dir benchmark \
+    --umls_dir UMLS \
+    --dataset benchmark/med_distant19
 ```
 
 ### Inductive
 
-An example command for the inductive split:
+An example command for the transductive split:
 
 ```bash
-python ../create_kb_aligned_text_corpora.py \
-    --medline_entities_linked_fname ../MEDLINE/medline_pubmed_2019_entity_linked.jsonl \
-    --triples_dir ../UMLS \
-    --split ind \
-    --size L
-```
-
-### Inductive with Definitions
-
-An example command for the inductive split with definitions:
-
-```bash
-python ../create_kb_aligned_text_corpora.py \
-    --medline_entities_linked_fname ../MEDLINE/medline_pubmed_2019_entity_linked.jsonl \
-    --triples_dir ../UMLS \
-    --split trans \
-    --has_def \
-    --size L
+python create_kb_aligned_text_corpora.py --medline_entities_linked_fname MEDLINE/medline_pubmed_2019_entity_linked.jsonl --triples_dir UMLS --split trans --sample 0.1 --train_size 0.7 --dev_size 0.1 --raw_neg_sample_size 500 --remove_multimentions_sents --remove_mention_overlaps --canonical_or_aliases_only --prune_frequent_mentions --max_mention_freq 1000 --min_rel_freq 1 --prune_frequent_mentions --prune_frequent_bags --max_bag_size 500
 ```
 
 ## From Scratch
@@ -218,37 +180,4 @@ python scispacy_entity_linking.py \
 
 ## Acknowledgement  
   
-If you find UMLS helpful in your work, please cite UMLS paper:  
-  
-```  
-@article{bodenreider2004unified,  
-title={The unified medical language system (UMLS): integrating biomedical terminology},  
-author={Bodenreider, Olivier},  
-journal={Nucleic acids research},  
-volume={32},  
-number={suppl\_1},  
-pages={D267--D270},  
-year={2004},  
-publisher={Oxford University Press}  
-}  
-```  
-Transductive split of SNOMED-CT is due to [snomed_kge](https://github.com/dchang56/snomed_kge) and citation of their work:  
-```  
-@inproceedings{chang2020benchmark,  
-title={Benchmark and Best Practices for Biomedical Knowledge Graph Embeddings},  
-author={Chang, David and Bala{\v{z}}evi{\'c}, Ivana and Allen, Carl and Chawla, Daniel and Brandt, Cynthia and Taylor, Andrew},  
-booktitle={Proceedings of the 19th SIGBioMed Workshop on Biomedical Language Processing},  
-pages={167--176},  
-year={2020}  
-}  
-```  
-Scripts to generate inductive splits are due to [blp](https://github.com/dfdazac/blp) and citation of their work:  
-```  
-@inproceedings{daza2021inductive,  
-title={Inductive Entity Representations from Text via Link Prediction},  
-author={Daza, Daniel and Cochez, Michael and Groth, Paul},  
-booktitle={Proceedings of the Web Conference 2021},  
-pages={798--808},  
-year={2021}  
-}  
-```
+Transductive split of SNOMED-CT is due to [snomed_kge](https://github.com/dchang56/snomed_kge). Scripts to generate inductive splits are due to [blp](https://github.com/dfdazac/blp). 
