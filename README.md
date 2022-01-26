@@ -65,7 +65,9 @@ As discussed in the paper, the KG split can be inductive or transductive. The ta
 ## Create Dataset
 
 ### Knowledge Base
-  
+
+--------------------------------------------------------------------------------
+
 We use `UMLS` as our knowledge base with `SNOMED_CT_US` subset-based installation using Metamorphosys. Please note that in order to have reproducible data splits, follow the steps as outlined below.  
   
 #### Download and Install UMLS2019AB  
@@ -93,17 +95,19 @@ Once UMLS installation is complete with MetamorphoSys, find the `*.RRF` files un
 ##### Semantic Groups File  
   
 Please download the Semantic Groups file from [here](https://lhncbc.nlm.nih.gov/ii/tools/MetaMap/Docs/SemGroups_2018.txt).  Once you have downloaded all the files, please match the resulting MD5 hash values of relevant files as reported in the `mmsys.md5` file in this directory. If you still face mismatches, please report the issue.  
-  
+
+--------------------------------------------------------------------------------
+
 #### Extract SNOMED-CT KG  
-  
-Preprocess UMLS files with the script:
+
+First we will preprocess the UMLS files with the script:
 
 ```bash  
 sh scripts/preprocess_umls.sh 
 ```  
 ##### Transductive Split  
 
-Now, extract the relevant triples data:  
+Now, we can extract the transductive triples split:  
 
 ```bash  
 sh scripts/kg_transductive.sh  
@@ -113,12 +117,15 @@ This will create several files but the more important ones are `train.tsv`, `dev
   
 ##### Inductive Split  
 
-Inductive split refers to the creation of dev and test sets where entities were not seen during training. To create simple inductive split, use:  
+Inductive split refers to the creation of dev and test sets where entities were not seen during training. It uses the files created by transductive split. To create simple inductive split, use:  
 
 ```bash
 sh scripts/kg_inductive.sh  
 ```  
+
 ## Documents
+
+--------------------------------------------------------------------------------
 
 As our documents we use abstract texts from the PubMed MEDLINE 2019 version available [here](https://lhncbc.nlm.nih.gov/ii/information/MBR/Baselines/2019.html). We provide a processed version of the corpora which has been deduplicated, tokenized and linked to the UMLS concepts with SciSpacy's `UMLSEntityLinker`. You can optionally recreate the corpora by following the steps outlined in the section "From Scratch".
 
