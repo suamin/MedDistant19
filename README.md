@@ -1,12 +1,60 @@
+# MedDistant19
+
 <p align="center">
   <img width="50%" src="https://github.com/suamin/MedDistant19/blob/main/imgs/meddistant19.png" />
 </p>
 
---------------------------------------------------------------------------------
-
-*MedDistant19* is a distantly supervised biomedical relation extraction (Bio-DSRE) corpus obtained by aligning the PubMed MEDLINE abstracts from 2019 with the SNOMED-CT knowledge graph (KG) derived from the UMLS Metathesaurus 2019. Lack of benchmark, reproducibility, and other inconsistencies in previous works called for the curation of such a resource, leading to a more challenging benchmark that is of clinical relevance.
+This is the data creation repository for the paper:  **MedDistant19: A Challenging Benchmark for Distantly Supervised Biomedical Relation Extraction**. Check out the [baselines](https://github.com/pminervini/meddistant-baselines) repository as well.
 
 --------------------------------------------------------------------------------
+
+## Contents
+
+- [Overview](#overview)
+- [Download](#download)
+- [Getting Started](#requirements)
+  - [Requirements](#requirements)
+  - [Dataset](#dataset)
+    - [Get the Data](#get-the-data)
+- [Citation](#Citation)
+
+## Overview
+
+*MedDistant19* is a distantly supervised biomedical relation extraction (Bio-DSRE) corpus obtained by aligning the PubMed MEDLINE abstracts from 2019 with the SNOMED-CT knowledge graph (KG), derived from the UMLS Metathesaurus 2019. Lack of benchmark, reproducibility, and other inconsistencies in previous works called for the curation of such a resource, leading to a more challenging benchmark.
+
+## Download
+
+**Before Downloading**: Please make sure you have obtained the UMLS license to make use of this dataset. For more details please read the note [here](https://github.com/suamin/MedDistant19/blob/1bc0f0ebede7387ffa15325e156ab8cf352aa0fd/benchmark/README.md).
+
+```bash
+bash /benchmark/download_meddistant19.sh
+```
+
+This will download the data in OpenNRE compatiable format in the directory `meddistant19`. An example line looks as follows:
+
+```json
+{"text": "Urethral stones are rarely formed primarily in the urethra and are usually associated with urethral strictures or diverticula .", "h": {"id": "C0041967", "pos": [51, 58], "name": "urethra"}, "t": {"id": "C0041974", "pos": [91, 110], "name": "urethral strictures"}, "relation": "finding_site_of"}
+```
+
+The text is pre-tokenized with ScispaCy and can be split at whitespace. The position indexes are at character level.
+
+## Data Statistics
+
+The dataset is constructed using the inductive KG split (see below). Final summary statistics are presented in the following table:
+
+| Split     | Instances  | Facts     | Rare (%)  | Bags     | NA (%)  |
+| --------- |:----------:|:---------:|:---------:|:--------:|:-------:|
+| Train     | 251,558    | 2,366     |  92.3%    | 80,668   | 96.9%   |
+| Valid     | 179,393    | 806       |  87.8%    | 31,805   | 98.2%   |
+| Test      | 213,602    | 1,138     |  91.3%    | 50,375   | 98.1%   |
+
+The KG split can be inductive or transductive. The table summarizes each split:
+
+| Facts             | Training   | Validation  | Testing   |
+| ----------------- |:----------:|:-----------:|:---------:|
+| Inductive (I)     | 345,374    | 62,116      | 130,563   |
+| Transductive (T)  | 402,522    | 41,491      | 84,414    |
+
 
 ## UMLS-KB  
   
