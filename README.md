@@ -16,6 +16,10 @@ This is the data creation repository for the paper:  **MedDistant19: A Challengi
 - [Create Dataset](#create-dataset)
   - [KB](#knowledge-base)
   - [Documents](#documents)
+- [From Scratch](#from-scratch)
+  - [Download Abstracts](#download-abstracts)
+  - [Tokenization](#tokenization)
+  - [Entity Linking](#entity-linking)
 - [Acknowledgement](#Acknowledgement)
 - [Citation](#Citation)
 
@@ -66,51 +70,47 @@ As discussed in the paper, the KG split can be inductive or transductive. The ta
 
 ### Knowledge Base
 
---------------------------------------------------------------------------------
-
 We use `UMLS` as our knowledge base with `SNOMED_CT_US` subset-based installation using Metamorphosys. Please note that in order to have reproducible data splits, follow the steps as outlined below.  
   
 #### Download and Install UMLS2019AB  
-  
+
 Download [UMLS2019AB](https://download.nlm.nih.gov/umls/kss/2019AB/umls-2019AB-full.zip) and unzip it in a directory (prefer this directory). Set the resulting path of the unzipped directory `umls-2019AB-full`. We will call this path as `UMLS_DOWNLOAD_DIR` in the remaining document.  
-  
+
 ##### MetamorphoSys  
-  
+
 Go to `UMLS_DOWNLOAD_DIR/2019AB-full` and use the script `run*` depending on your OS. Once the MetamorphoSys application opens, press the `Install UMLS` button. A window will prompt asking for `Source` and `Destination` paths. The `Source` shall already be set to `UMLS_DOWNLOAD_DIR/2019AB-full`. Create a new folder under `UMLS_DOWNLOAD_DIR` called `MedDistant19` and set it as `Destination` path, it shall look like `UMLS_DOWNLOAD_DIR/MedDistant19`. In the remaining document, these two paths will be called `SOURCE` and `DESTINATION`.  
-  
+
 ##### config.prop  
-  
+
 Run the script `init_config.py` to set the path values in the `config.prop` file provided in this directory.  
   
 ```bash  
 python init_config.py --src SOURCE --dst DESTINATION  
 ```  
-  
-Now, use this configuration file in MetamorphoSys for installing the `SNOMED_CT_US` by selecting the `Open Configuration` option.  
-  
-##### .RRF Files  
-  
-Once UMLS installation is complete with MetamorphoSys, find the `*.RRF` files under the `DESTINATION/META`. Copy `MRREL.RRF`, `MRCONSO.RRF` and `MRSTY.RRF` in this directory.  
-  
-##### Semantic Groups File  
-  
-Please download the Semantic Groups file from [here](https://lhncbc.nlm.nih.gov/ii/tools/MetaMap/Docs/SemGroups_2018.txt).  Once you have downloaded all the files, please match the resulting MD5 hash values of relevant files as reported in the `mmsys.md5` file in this directory. If you still face mismatches, please report the issue.  
 
---------------------------------------------------------------------------------
+Now, use this configuration file in MetamorphoSys for installing the `SNOMED_CT_US` by selecting the `Open Configuration` option.  
+
+##### .RRF Files  
+
+Once UMLS installation is complete with MetamorphoSys, find the `*.RRF` files under the `DESTINATION/META`. Copy `MRREL.RRF`, `MRCONSO.RRF` and `MRSTY.RRF` in this directory.  
+
+##### Semantic Groups File  
+
+Please download the Semantic Groups file from [here](https://lhncbc.nlm.nih.gov/ii/tools/MetaMap/Docs/SemGroups_2018.txt).  Once you have downloaded all the files, please match the resulting MD5 hash values of relevant files as reported in the `mmsys.md5` file in this directory. If you still face mismatches, please report the issue.  
 
 #### Extract SNOMED-CT KG  
 
 First we will preprocess the UMLS files with the script:
 
 ```bash  
-sh scripts/preprocess_umls.sh 
+bash scripts/preprocess_umls.sh 
 ```  
 ##### Transductive Split  
 
 Now, we can extract the transductive triples split:  
 
 ```bash  
-sh scripts/kg_transductive.sh  
+bash scripts/kg_transductive.sh  
 ```  
 
 This will create several files but the more important ones are `train.tsv`, `dev.tsv` and `test.tsv`. These splits are transductive in nature, i.e., the entities appearing in dev and test sets have appeared in the training set.  
@@ -120,12 +120,10 @@ This will create several files but the more important ones are `train.tsv`, `dev
 Inductive split refers to the creation of dev and test sets where entities were not seen during training. It uses the files created by transductive split. To create simple inductive split, use:  
 
 ```bash
-sh scripts/kg_inductive.sh  
+bash scripts/kg_inductive.sh  
 ```  
 
 ## Documents
-
---------------------------------------------------------------------------------
 
 As our documents we use abstract texts from the PubMed MEDLINE 2019 version available [here](https://lhncbc.nlm.nih.gov/ii/information/MBR/Baselines/2019.html). We provide a processed version of the corpora which has been deduplicated, tokenized and linked to the UMLS concepts with SciSpacy's `UMLSEntityLinker`. You can optionally recreate the corpora by following the steps outlined in the section "From Scratch".
 
@@ -153,19 +151,18 @@ This will result extract the file `medline_pubmed_2019_entity_linked.jsonl` wher
 }
 ```
 
-Assuming that you have already followed the instructions in the UMLS folder, we can create the benchmark splits in OpenNRE format. We create two kind of corpora, transductive, inductive.
+Assuming that you have already followed the instructions in the UMLS folder, we can create the benchmark splits in OpenNRE format.
 
-### Inductive
-
-The example command below creates the the benchmark `med_distant19` with the split files `med_distant19_train.txt`, `med_distant19_dev.txt` and `med_distant19_test.txt` in `MEDLINE` directory:
+The script below creates the the benchmark `med_distant19` with the split files `med_distant19_train.txt`, `med_distant19_dev.txt` and `med_distant19_test.txt` in `MEDLINE` directory:
 
 ```bash
-python create_kb_aligned_text_corpora.py --medline_entities_linked_fname MEDLINE/medline_pubmed_2019_entity_linked.jsonl --triples_dir UMLS --split trans --sample 0.1 --train_size 0.7 --dev_size 0.1 --raw_neg_sample_size 500 --corrupt_arg --remove_multimentions_sents --use_type_constraint --use_arg_constraint --remove_mention_overlaps --canonical_or_aliases_only --prune_frequent_mentions --max_mention_freq 1000 --min_rel_freq 1 --prune_frequent_mentions --prune_frequent_bags --max_bag_size 500
+bash scripts/create_meddistant19.sh
 ```
 
 You can move these files to the folder `benchmark`:
 
 ```bash
+mkdir benchmark/med_distant19
 mv ../MEDLINE/med_distant19_*.txt benchmark/med_distant19/
 ```
 
@@ -180,7 +177,7 @@ python extract_benchmark_metadata.py \
 
 ## From Scratch
 
-### Download and Extract PubMed Abstract Texts
+### Download Abstracts
 
 First download the abstracts from 2019 and extract the texts from them with script:
 
@@ -191,7 +188,7 @@ sh download_and_extract_abstracts.sh
 
 This will produce several `*.xml.gz.txt` files in this directory. 
 
-### Run SciSpacy Tokenization
+#### Tokenization
 
 To extract sentences from the abstract texts, we use SciSpacy for tokenization:
 
@@ -213,7 +210,7 @@ We ran this command on a cluster with slurm support. It took 9hrs with 32 CPUs (
 cat MEDLINE/medline_pubmed_2019_sents.txt | sort | uniq > MEDLINE/medline_pubmed_2019_unique_sents.txt
 ```
 
-### Run SciSpacy Entity Linker
+#### Entity Linking
 
 Previous studies have used exact matching strategies which produce suboptimal concept linking. We use SciSpacy's `UMLSEntityLinker` to extract concepts.
 
@@ -235,7 +232,7 @@ python scispacy_entity_linking.py \
     --max_sent_tokens 128
 ```
 
-**WARNING** This job is memory intensive and requires upto half TB. We ran this command on slurm supported cluster with 72 CPUs (with 6GB memory each) and a batch size of 4096. It took about 40hrs to link about 145M unique sentences.
+**WARNING**: This job is memory intensive and requires upto half TB. We ran this command on slurm supported cluster with 72 CPUs (with 6GB memory each) and a batch size of 4096. It took about 40hrs to link about 145M unique sentences.
 
 ## Acknowledgement  
   
