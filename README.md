@@ -12,10 +12,11 @@ This is the data creation repository for the paper:  **MedDistant19: A Challengi
 
 - [Overview](#overview)
 - [Download](#download)
-- [Getting Started](#requirements)
-  - [Requirements](#requirements)
-  - [Dataset](#dataset)
-    - [Get the Data](#get-the-data)
+  - [Statistics](#statistics)
+- [Create Dataset](#create-dataset)
+  - [KB](#knowledge-base)
+  - [Documents](#documents)
+- [Acknowledgement](#Acknowledgement)
 - [Citation](#Citation)
 
 ## Overview
@@ -27,20 +28,26 @@ This is the data creation repository for the paper:  **MedDistant19: A Challengi
 **Before Downloading**: Please make sure you have obtained the UMLS license to make use of this dataset. For more details please read the note [here](https://github.com/suamin/MedDistant19/blob/1bc0f0ebede7387ffa15325e156ab8cf352aa0fd/benchmark/README.md).
 
 ```bash
-bash /benchmark/download_meddistant19.sh
+cd benchmark
+bash download_meddistant19.sh
 ```
 
-This will download the data in OpenNRE compatiable format in the directory `meddistant19`. An example line looks as follows:
+This will download the data in OpenNRE compatiable format in the directory `benchmark/meddistant19`. An example line looks as follows:
 
 ```json
-{"text": "Urethral stones are rarely formed primarily in the urethra and are usually associated with urethral strictures or diverticula .", "h": {"id": "C0041967", "pos": [51, 58], "name": "urethra"}, "t": {"id": "C0041974", "pos": [91, 110], "name": "urethral strictures"}, "relation": "finding_site_of"}
+{
+    "text": "Urethral stones are rarely formed primarily in the urethra and are usually associated with urethral strictures or diverticula .", 
+    "h": {"id": "C0041967", "pos": [51, 58], "name": "urethra"}, 
+    "t": {"id": "C0041974", "pos": [91, 110], "name": "urethral strictures"}, 
+    "relation": "finding_site_of"
+}
 ```
 
 The text is pre-tokenized with ScispaCy and can be split at whitespace. The position indexes are at character level.
 
-## Data Statistics
+### Statistics
 
-The dataset is constructed using the inductive KG split (see below). Final summary statistics are presented in the following table:
+The dataset is constructed using the inductive KG split (see below). The summary statistics of final data is presented in the following table:
 
 | Split     | Instances  | Facts     | Rare (%)  | Bags     | NA (%)  |
 | --------- |:----------:|:---------:|:---------:|:--------:|:-------:|
@@ -48,90 +55,95 @@ The dataset is constructed using the inductive KG split (see below). Final summa
 | Valid     | 179,393    | 806       |  87.8%    | 31,805   | 98.2%   |
 | Test      | 213,602    | 1,138     |  91.3%    | 50,375   | 98.1%   |
 
-The KG split can be inductive or transductive. The table summarizes each split:
+As discussed in the paper, the KG split can be inductive or transductive. The table below summarizes both (split ratio: 70%, 10%, 20%):
 
 | Facts             | Train   | Valid  | Test   |
-| ----------------- |:----------:|:-----------:|:---------:|
-| Inductive (I)     | 345,374    | 62,116      | 130,563   |
-| Transductive (T)  | 402,522    | 41,491      | 84,414    |
+| ----------------- |:-------:|:------:|:------:|
+| Inductive (I)     | 345,374 | 62,116 | 130,563|
+| Transductive (T)  | 402,522 | 41,491 | 84,414 |
 
+## Create Dataset
 
-## UMLS-KB  
+### Knowledge Base
   
 We use `UMLS` as our knowledge base with `SNOMED_CT_US` subset-based installation using Metamorphosys. Please note that in order to have reproducible data splits, follow the steps as outlined below.  
   
-### Download and Install UMLS2019AB  
+#### Download and Install UMLS2019AB  
   
 Download [UMLS2019AB](https://download.nlm.nih.gov/umls/kss/2019AB/umls-2019AB-full.zip) and unzip it in a directory (prefer this directory). Set the resulting path of the unzipped directory `umls-2019AB-full`. We will call this path as `UMLS_DOWNLOAD_DIR` in the remaining document.  
   
-#### MetamorphoSys  
+##### MetamorphoSys  
   
-Go to `UMLS_DOWNLOAD_DIR/2019AB-full` and use the script `run*` depending on your OS. Once the # MetamorphoSys application opens, press the `Install UMLS` button. A window will prompt asking for `Source` and `Destination` paths. The `Source` shall already be set to `UMLS_DOWNLOAD_DIR/2019AB-full`. Create a new folder under `UMLS_DOWNLOAD_DIR` called `MedDistant19` and set it as `Destination` path, it shall look like `UMLS_DOWNLOAD_DIR/MedDistant19`. In the remaining document, these two paths will be called `SOURCE` and `DESTINATION`.  
+Go to `UMLS_DOWNLOAD_DIR/2019AB-full` and use the script `run*` depending on your OS. Once the MetamorphoSys application opens, press the `Install UMLS` button. A window will prompt asking for `Source` and `Destination` paths. The `Source` shall already be set to `UMLS_DOWNLOAD_DIR/2019AB-full`. Create a new folder under `UMLS_DOWNLOAD_DIR` called `MedDistant19` and set it as `Destination` path, it shall look like `UMLS_DOWNLOAD_DIR/MedDistant19`. In the remaining document, these two paths will be called `SOURCE` and `DESTINATION`.  
   
-#### config.prop  
+##### config.prop  
   
 Run the script `init_config.py` to set the path values in the `config.prop` file provided in this directory.  
   
-```  
+```bash  
 python init_config.py --src SOURCE --dst DESTINATION  
 ```  
   
 Now, use this configuration file in MetamorphoSys for installing the `SNOMED_CT_US` by selecting the `Open Configuration` option.  
   
-#### .RRF Files  
+##### .RRF Files  
   
 Once UMLS installation is complete with MetamorphoSys, find the `*.RRF` files under the `DESTINATION/META`. Copy `MRREL.RRF`, `MRCONSO.RRF` and `MRSTY.RRF` in this directory.  
   
-#### Semantic Groups File  
+##### Semantic Groups File  
   
-Please download the Semantic Groups file from [here](https://lhncbc.nlm.nih.gov/ii/tools/MetaMap/Docs/SemGroups_2018.txt).  
+Please download the Semantic Groups file from [here](https://lhncbc.nlm.nih.gov/ii/tools/MetaMap/Docs/SemGroups_2018.txt).  Once you have downloaded all the files, please match the resulting MD5 hash values of relevant files as reported in the `mmsys.md5` file in this directory. If you still face mismatches, please report the issue.  
   
-Once you have downloaded all the files, please match the resulting MD5 hash values of relevant files as reported in the `mmsys.md5` file in this directory. If you still face mismatches, please report the issue.  
+#### Extract SNOMED-CT KG  
   
-### Extract SNOMED-CT Triples  
-  
-Preprocess UMLS files with the script:  
+Preprocess UMLS files with the script:
+
 ```bash  
-sh scripts/umls_preprocess.sh  
+sh scripts/preprocess_umls.sh 
 ```  
-### Transductive Split  
+##### Transductive Split  
+
 Now, extract the relevant triples data:  
+
 ```bash  
-sh scripts/snomed_triples.sh  
+sh scripts/kg_transductive.sh  
 ```  
+
 This will create several files but the more important ones are `train.tsv`, `dev.tsv` and `test.tsv`. These splits are transductive in nature, i.e., the entities appearing in dev and test sets have appeared in the training set.  
   
-### Inductive Splits  
-#### A. Inductive Split  
+##### Inductive Split  
+
 Inductive split refers to the creation of dev and test sets where entities were not seen during training. To create simple inductive split, use:  
-```  
-sh scripts/inductive_split.sh  
-```  
-This will create split files `ind-train.tsv`, `ind-dev.tsv` and `ind-test.tsv` files.  
-#### B. Inductive Split with Definitions  
-Next, we will create a second version of inductive split that has definitions available in `UMLS2020AA` kb available from SciSpacy. For this, use the script:  
-```  
-sh scripts/inductive_split_with_def.sh  
-```  
-This will create split files `ind_def-train.tsv`, `ind_def-dev.tsv` and `ind_def-test.tsv` files.  
-  
-
-## PubMed MEDLINE Abstract-Texts
-
-As our texts source we use abstract texts from the PubMed MEDLINE 2019 version available [here](https://lhncbc.nlm.nih.gov/ii/information/MBR/Baselines/2019.html). We provide a processed version of the corpora which has been deduplicated, tokenized and linked to the UMLS concepts with SciSpacy's `UMLSEntityLinker`. You can optionally recreate the corpora by following the steps outlined in the section "From Scratch".
-
-## Download Entity Linked Corpora
-
-Please view the [link](https://drive.google.com/drive/folders/1hZQX_ICNAlMffwCJW3fNnXNVv7g9pGzR?usp=sharing) and download the file `medline_pubmed_2019_entity_linked.tar.gz` (~19GB compressed) in this folder. Match the md5 hash value for the downloaded file. Uncompress the file (~83GB) in this directory:
 
 ```bash
+sh scripts/kg_inductive.sh  
+```  
+## Documents
+
+As our documents we use abstract texts from the PubMed MEDLINE 2019 version available [here](https://lhncbc.nlm.nih.gov/ii/information/MBR/Baselines/2019.html). We provide a processed version of the corpora which has been deduplicated, tokenized and linked to the UMLS concepts with SciSpacy's `UMLSEntityLinker`. You can optionally recreate the corpora by following the steps outlined in the section "From Scratch".
+
+### Download Entity Linked Corpora
+
+Please view the [link](https://drive.google.com/drive/folders/1hZQX_ICNAlMffwCJW3fNnXNVv7g9pGzR?usp=sharing) and download the file `medline_pubmed_2019_entity_linked.tar.gz` (~19GB compressed) in `MEDLINE` folder. Match the md5sum value for the downloaded file. Uncompress the file (~83GB):
+
+```bash
+cd MEDLINE
 tar -xzvf medline_pubmed_2019_entity_linked.tar.gz
 ```
 
 This will result extract the file `medline_pubmed_2019_entity_linked.jsonl` where each line is in JSON format with tokenized text with associated UMLS concepts. For example:
 
-```
-{"text": "A 25 % body surface area , full-thickness scald wound was produced in anesthetized animals .", "mentions": [{"id": "C0005902", "pos": [7, 24], "name": "body surface area"}, {"id": "C2733564", "pos": [27, 47], "name": "full-thickness scald"}, {"id": "C0043250", "pos": [48, 53], "name": "wound"}, {"id": "C1720436", "pos": [70, 82], "name": "anesthetized"}, {"id": "C0003062", "pos": [83, 90], "name": "animals"}]}
+```json
+{
+    "text": "A 25 % body surface area , full-thickness scald wound was produced in anesthetized animals .", 
+    "mentions": [
+        {"id": "C0005902", "pos": [7, 24], "name": "body surface area"}, 
+        {"id": "C2733564", "pos": [27, 47], "name": "full-thickness scald"}, 
+        {"id": "C0043250", "pos": [48, 53], "name": "wound"}, 
+        {"id": "C1720436", "pos": [70, 82], "name": "anesthetized"}, 
+        {"id": "C0003062", "pos": [83, 90], "name": "animals"}
+    ]
+}
 ```
 
 Assuming that you have already followed the instructions in the UMLS folder, we can create the benchmark splits in OpenNRE format. We create two kind of corpora, transductive, inductive.
@@ -157,14 +169,6 @@ python extract_benchmark_metadata.py \
     --benchmark_dir benchmark \
     --umls_dir UMLS \
     --dataset benchmark/med_distant19
-```
-
-### Inductive
-
-An example command for the transductive split:
-
-```bash
-python create_kb_aligned_text_corpora.py --medline_entities_linked_fname MEDLINE/medline_pubmed_2019_entity_linked.jsonl --triples_dir UMLS --split trans --sample 0.1 --train_size 0.7 --dev_size 0.1 --raw_neg_sample_size 500 --remove_multimentions_sents --remove_mention_overlaps --canonical_or_aliases_only --prune_frequent_mentions --max_mention_freq 1000 --min_rel_freq 1 --prune_frequent_mentions --prune_frequent_bags --max_bag_size 500
 ```
 
 ## From Scratch
