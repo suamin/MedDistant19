@@ -50,7 +50,7 @@ The dataset is constructed using the inductive KG split (see below). Final summa
 
 The KG split can be inductive or transductive. The table summarizes each split:
 
-| Facts             | Training   | Validation  | Testing   |
+| Facts             | Train   | Valid  | Test   |
 | ----------------- |:----------:|:-----------:|:---------:|
 | Inductive (I)     | 345,374    | 62,116      | 130,563   |
 | Transductive (T)  | 402,522    | 41,491      | 84,414    |
