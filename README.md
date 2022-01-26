@@ -20,8 +20,8 @@ This is the data creation repository for the paper:  **MedDistant19: A Challengi
   - [Download Abstracts](#download-abstracts)
   - [Tokenization](#tokenization)
   - [Entity Linking](#entity-linking)
-- [Acknowledgement](#Acknowledgement)
 - [Citation](#Citation)
+- [Acknowledgement](#Acknowledgement)
 
 ## Overview
 
@@ -234,6 +234,14 @@ python scispacy_entity_linking.py \
 
 **WARNING**: This job is memory intensive and requires upto half TB. We ran this command on slurm supported cluster with 72 CPUs (with 6GB memory each) and a batch size of 4096. It took about 40hrs to link about 145M unique sentences.
 
+## Citation
+
+```bibtex
+@inproceedings{
+    title = "MedDistant19: A Challenging Benchmark for Distantly Supervised Biomedical Relation Extraction",
+}
+```
+
 ## Acknowledgement  
   
-Transductive split of SNOMED-CT is due to [snomed_kge](https://github.com/dchang56/snomed_kge). Scripts to generate inductive splits are due to [blp](https://github.com/dfdazac/blp). 
+We are thankful for the transductive split creation of SNOMED-CT, which is adopted from [snomed_kge](https://github.com/dchang56/snomed_kge). We are also grateful for the inductive split code by [blp](https://github.com/dfdazac/blp).
