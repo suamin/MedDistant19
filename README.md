@@ -29,7 +29,7 @@ This is the data creation repository for the paper:  **MedDistant19: A Challengi
 
 ## Installation
 
-Please use the requirements for file:
+Please use the requirements file for installation:
 
 ```bash
 pip install -r requirements.txt
