@@ -125,7 +125,7 @@ bash scripts/kg_inductive.sh
 
 ## Documents
 
-As our documents we use abstract texts from the PubMed MEDLINE 2019 version available [here](https://lhncbc.nlm.nih.gov/ii/information/MBR/Baselines/2019.html). We provide a processed version of the corpora which has been deduplicated, tokenized and linked to the UMLS concepts with SciSpacy's `UMLSEntityLinker`. You can optionally recreate the corpora by following the steps outlined in the section "From Scratch".
+As our documents we use abstract texts from the PubMed MEDLINE 2019 version available [here](https://lhncbc.nlm.nih.gov/ii/information/MBR/Baselines/2019.html). We provide a processed version of the corpora which has been deduplicated, tokenized and linked to the UMLS concepts with ScipaCy's `UMLSEntityLinker`. You can optionally recreate the corpora by following the steps outlined in the section "From Scratch".
 
 ### Download Entity Linked Corpora
 
@@ -151,6 +151,13 @@ This will result extract the file `medline_pubmed_2019_entity_linked.jsonl` wher
 }
 ```
 
+(Optional Step: Start) This is step is optional if you wish to train your own word2vec model using this corpus. The current default (`word2vec.py`) setup is the one used to obtain the pre-trained PubMed embeddings for word2vec model:
+
+```bash
+python word2vec.py --medline_entities_linked_fname MEDLINE/medline_pubmed_2019_entity_linked.jsonl --output_dir w2v_model
+```
+(Optional Step: End)
+ 
 Assuming that you have already followed the instructions in the UMLS folder, we can create the benchmark splits in OpenNRE format.
 
 The script below creates the the benchmark `med_distant19` with the split files `med_distant19_train.txt`, `med_distant19_dev.txt` and `med_distant19_test.txt` in `MEDLINE` directory:
@@ -188,9 +195,17 @@ sh download_and_extract_abstracts.sh
 
 This will produce several `*.xml.gz.txt` files in this directory. 
 
+### Install ScispaCy Model
+
+We use the `en_core_sci_lg` model, please install it first:
+
+```
+pip install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.4.0/en_core_sci_lg-0.4.0.tar.gz
+```
+
 #### Tokenization
 
-To extract sentences from the abstract texts, we use SciSpacy for tokenization:
+To extract sentences from the abstract texts, we use ScispaCy for tokenization:
 
 ```bash
 model=en_core_sci_lg
@@ -212,14 +227,14 @@ cat MEDLINE/medline_pubmed_2019_sents.txt | sort | uniq > MEDLINE/medline_pubmed
 
 #### Entity Linking
 
-Previous studies have used exact matching strategies which produce suboptimal concept linking. We use SciSpacy's `UMLSEntityLinker` to extract concepts.
+Previous studies have used exact matching strategies which produce suboptimal concept linking. We use ScispaCy's `UMLSEntityLinker` to extract concepts.
 
 ```bash
 num_cpus=72
 model=en_core_sci_lg
 batch_size=4096
 
-# Please set this to a directory with a lot of space! SciSpacy will download indexes the first time which takes space 
+# Please set this to a directory with a lot of space! ScispaCy will download indexes the first time which takes space 
 # export SCISPACY_CACHE=/to/cache/scispacy
 
 python scispacy_entity_linking.py \

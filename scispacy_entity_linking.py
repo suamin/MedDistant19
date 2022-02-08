@@ -10,7 +10,6 @@ import warnings
 import itertools
 import json
 import argparse
-import fasttext
 
 from tqdm import tqdm
 from pathlib import Path
