@@ -11,6 +11,7 @@ This is the data creation repository for the paper:  **MedDistant19: A Challengi
 ## Contents
 
 - [Overview](#overview)
+- [Installation](#installation)
 - [Download](#download)
   - [Statistics](#statistics)
 - [Create Dataset](#create-dataset)
