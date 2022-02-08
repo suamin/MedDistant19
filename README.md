@@ -27,6 +27,14 @@ This is the data creation repository for the paper:  **MedDistant19: A Challengi
 
 *MedDistant19* is a distantly supervised biomedical relation extraction (Bio-DSRE) corpus obtained by aligning the PubMed MEDLINE abstracts from 2019 with the SNOMED-CT knowledge graph (KG), derived from the UMLS Metathesaurus 2019. Lack of benchmark, reproducibility, and other inconsistencies in previous works called for the curation of such a resource, leading to a more challenging benchmark.
 
+## Installation
+
+Please use the requirements for file:
+
+```bash
+pip install -r requirements.txt
+```
+
 ## Download
 
 **Before Downloading**: Please make sure you have obtained the UMLS license to make use of this dataset. For more details please read the note [here](https://github.com/suamin/MedDistant19/blob/1bc0f0ebede7387ffa15325e156ab8cf352aa0fd/benchmark/README.md).
