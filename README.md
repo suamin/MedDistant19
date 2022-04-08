@@ -260,12 +260,24 @@ python scispacy_entity_linking.py \
 
 ## Citation
 
+If you find our work useful, please consider citing:
+
 ```bibtex
-@inproceedings{
+@inproceedings{amin-etal-2022-meddistant19,
     title = "MedDistant19: A Challenging Benchmark for Distantly Supervised Biomedical Relation Extraction",
+    author = "Amin, Saadullah and
+    Minervini, Pasquale and
+    Chang, David and
+    Neumann, Günter and 
+    Stenetorp, Pontus",
+    booktitle = "Proceedings of the 21st Workshop on Biomedical Language Processing",
+    month = may,
+    year = "2022",
+    address = "Online",
+    publisher = "Association for Computational Linguistics"
 }
 ```
 
 ## Acknowledgement  
   
-We are thankful for the transductive split creation of SNOMED-CT, which is adopted from [snomed_kge](https://github.com/dchang56/snomed_kge). We are also grateful for the inductive split code by [blp](https://github.com/dfdazac/blp).
+We are thankful for the transductive split of SNOMED-CT in MedDistant19, which is adopted from [snomed_kge](https://github.com/dchang56/snomed_kge). We are also grateful for the inductive split code by [blp](https://github.com/dfdazac/blp).
