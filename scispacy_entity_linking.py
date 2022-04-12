@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning)
 
 
-def load_entity_linking_model(
+def load_scispacy_model(
         scispacy_model_name: str = "en_core_sci_lg",
         cache_dir: Union[str, Path] = None
     ) -> Language:
@@ -63,13 +63,27 @@ def load_entity_linking_model(
     return nlp
 
 
-def process_tagged_doc(doc: Doc) -> List[Dict[str, Union[str, Tuple[int, int]]]]:
+def process_linked_entities(doc: Doc) -> List[Dict[str, Union[str, Tuple[int, int]]]]:
     return [
         {
             'id': ent._.umls_ents[0][0],
+            'score': ent._.umls_ents[0][1],
             'pos': [ent.start_char, ent.end_char],
             'name': str(ent)
         } for ent in doc.ents if ent._.umls_ents
+    ]
+
+
+def process_syntactic_features(doc: Doc):
+    sent = list(doc.sents)[0] # since we are already processing a single sentence
+    return [
+        {
+            'tag': token['tag'], 
+            'pos': token['pos'], 
+            'morph': token['morph'],
+            'dep': token['dep'], 
+            'head': token['head']
+        } for token in sent.as_doc().to_json()['tokens'] # spacy returns order token
     ]
 
 
@@ -89,9 +103,7 @@ def iter_sentences_from_txt(args) -> Generator[str, None, None]:
 
 
 def main(args):
-    nlp = load_entity_linking_model(args.scispacy_model_name, args.cache_dir)
-    
-    # A bit slow and memory intensive but better option when doing language identification as well
+    nlp = load_scispacy_model(args.scispacy_model_name, args.cache_dir)
     sents = iter_sentences_from_txt(args)
     output_file = args.output_file
     
@@ -113,11 +125,12 @@ def main(args):
                 for _ in range(count):
                     wf.write(json.dumps(jsonls.pop()) + '\n') # clear out sents list
 
-        mentions = process_tagged_doc(sent)
+        mentions = process_linked_entities(sent)
+        features = process_syntactic_features(sent)
         
         # Consider only mentions with 2 or more (need at least two ents)
         if len(mentions) >= 2:
-            jsonls.append({'text': sent.text, 'mentions': mentions})
+            jsonls.append({'text': sent.text, 'mentions': mentions, 'features': features})
         else:
             continue
         
