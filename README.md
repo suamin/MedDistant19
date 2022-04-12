@@ -263,18 +263,11 @@ python scispacy_entity_linking.py \
 If you find our work useful, please consider citing:
 
 ```bibtex
-@inproceedings{amin-etal-2022-meddistant19,
-    title = "MedDistant19: A Challenging Benchmark for Distantly Supervised Biomedical Relation Extraction",
-    author = "Amin, Saadullah and
-    Minervini, Pasquale and
-    Chang, David and
-    Neumann, Günter and 
-    Stenetorp, Pontus",
-    booktitle = "Proceedings of the 21st Workshop on Biomedical Language Processing",
-    month = may,
-    year = "2022",
-    address = "Online",
-    publisher = "Association for Computational Linguistics"
+@article{amin2022meddistant19,
+  title={MedDistant19: A Challenging Benchmark for Distantly Supervised Biomedical Relation Extraction},
+  author={Amin, Saadullah and Minervini, Pasquale and Chang, David and Neumann, Günter and Stenetorp, Pontus},
+  journal={arXiv preprint arXiv:2204.04779},
+  year={2022}
 }
 ```
 
