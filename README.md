@@ -265,7 +265,7 @@ If you find our work useful, please consider citing:
 ```bibtex
 @article{amin2022meddistant19,
   title={MedDistant19: A Challenging Benchmark for Distantly Supervised Biomedical Relation Extraction},
-  author={Amin, Saadullah and Minervini, Pasquale and Chang, David and Neumann, Günter and Stenetorp, Pontus},
+  author={Amin, Saadullah and Minervini, Pasquale and Chang, David and Neumann, G{\"u}nter and Stenetorp, Pontus},
   journal={arXiv preprint arXiv:2204.04779},
   year={2022}
 }
