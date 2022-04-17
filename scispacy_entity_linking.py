@@ -65,25 +65,24 @@ def load_scispacy_model(
 
 def process_linked_entities(doc: Doc) -> List[Dict[str, Union[str, Tuple[int, int]]]]:
     return [
-        {
-            'id': ent._.umls_ents[0][0],
-            'score': ent._.umls_ents[0][1],
-            'pos': [ent.start_char, ent.end_char],
-            'name': str(ent)
-        } for ent in doc.ents if ent._.umls_ents
+        [
+            ent._.umls_ents[0][0], # id
+            f'{ent._.umls_ents[0][1]:.2f}', # score 
+            [ent.start_char, ent.end_char], # (start, end) pos
+        ] for ent in doc.ents if ent._.umls_ents
     ]
 
 
 def process_syntactic_features(doc: Doc):
-    sent = list(doc.sents)[0] # since we are already processing a single sentence
+    sent = next(iter(doc.sents)) # since we are already processing a single sentence
     return [
-        {
-            'tag': token['tag'], 
-            'pos': token['pos'], 
-            'morph': token['morph'],
-            'dep': token['dep'], 
-            'head': token['head']
-        } for token in sent.as_doc().to_json()['tokens'] # spacy returns order token
+        [
+            token['tag'], 
+            token['pos'], 
+            token['morph'],
+            token['dep'], 
+            token['head']
+        ] for token in sent.as_doc().to_json()['tokens'] # spacy returns order token
     ]
 
 
@@ -104,7 +103,7 @@ def iter_sentences_from_txt(args) -> Generator[str, None, None]:
 
 def main(args):
     nlp = load_scispacy_model(args.scispacy_model_name, args.cache_dir)
-    sents = iter_sentences_from_txt(args)
+    sents = list(iter_sentences_from_txt(args))
     output_file = args.output_file
     
     idx = 0
@@ -114,7 +113,7 @@ def main(args):
     
     for sent in tqdm(nlp.pipe(sents, n_process=args.n_process, batch_size=args.batch_size)):
         
-        if idx % 1000000 == 0 and idx > 0:
+        if idx % 500000 == 0 and idx > 0:
             speed = idx // ((time.time() - t) / 60)
             
             logger.info(f'Processed {idx} sents @ {speed} sents/min ...')
