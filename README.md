@@ -138,7 +138,7 @@ As our documents we use abstract texts from the PubMed MEDLINE 2019 version avai
 
 ### Download Entity Linked Corpora
 
-Please view the [link](https://drive.google.com/drive/folders/1hZQX_ICNAlMffwCJW3fNnXNVv7g9pGzR?usp=sharing) and download the file `medline_pubmed_2019_entity_linked.tar.gz` (~19GB compressed) in `MEDLINE` folder. Match the md5sum value for the downloaded file. Uncompress the file (~83GB):
+Please view the [link](https://drive.google.com/drive/folders/1hZQX_ICNAlMffwCJW3fNnXNVv7g9pGzR?usp=sharing) and download the file `medline_pubmed_2019_entity_linked.tar.gz` (~30GB compressed) in `MEDLINE` folder. Match the md5sum value for the downloaded file. Uncompress the file (~221GB):
 
 ```bash
 cd MEDLINE
@@ -149,14 +149,30 @@ This will result extract the file `medline_pubmed_2019_entity_linked.jsonl` wher
 
 ```json
 {
-    "text": "A 25 % body surface area , full-thickness scald wound was produced in anesthetized animals .", 
-    "mentions": [
-        {"id": "C0005902", "pos": [7, 24], "name": "body surface area"}, 
-        {"id": "C2733564", "pos": [27, 47], "name": "full-thickness scald"}, 
-        {"id": "C0043250", "pos": [48, 53], "name": "wound"}, 
-        {"id": "C1720436", "pos": [70, 82], "name": "anesthetized"}, 
-        {"id": "C0003062", "pos": [83, 90], "name": "animals"}
-    ]
+  "text": "30 % of ertapenem is cleared by a session of haemodialysis ( HD ) .", 
+  "mentions": [
+    ["C1120106", "1.00", [8, 17]], 
+    ["C1883016", "1.00", [34, 41]], 
+    ["C0019004", "1.00", [45, 58]], 
+    ["C0019829", "1.00", [61, 63]]
+  ], 
+  "features": [
+    ["CD", "NUM", "NumType=Card", "nummod", 1], 
+    ["NN", "NOUN", "Number=Sing", "nsubjpass", 5], 
+    ["IN", "ADP", "", "case", 3], 
+    ["NN", "NOUN", "Number=Sing", "nmod", 1], 
+    ["VBZ", "VERB", "Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin", "auxpass", 5], 
+    ["VBN", "VERB", "Aspect=Perf|Tense=Past|VerbForm=Part", "ROOT", 5], 
+    ["IN", "ADP", "", "case", 8], 
+    ["DT", "DET", "Definite=Ind|PronType=Art", "det", 8], 
+    ["NN", "NOUN", "Number=Sing", "nmod", 5], 
+    ["IN", "ADP", "", "case", 10], 
+    ["NN", "NOUN", "Number=Sing", "nmod", 8], 
+    ["-LRB-", "PUNCT", "PunctSide=Ini|PunctType=Brck", "punct", 12], 
+    ["NN", "NOUN", "Number=Sing", "appos", 10], 
+    ["-RRB-", "PUNCT", "PunctSide=Fin|PunctType=Brck", "punct", 12], 
+    [".", "PUNCT", "PunctType=Peri", "punct", 5]
+  ]
 }
 ```
 
