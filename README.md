@@ -145,7 +145,7 @@ cd MEDLINE
 tar -xzvf medline_pubmed_2019_entity_linked.tar.gz
 ```
 
-This will result extract the file `medline_pubmed_2019_entity_linked.jsonl` where each line is in JSON format with tokenized text with associated UMLS concepts. For example:
+This will result extract the file `medline_pubmed_2019_entity_linked.jsonl` where each line is in JSON format with tokenized text with associated UMLS concepts and linguistic features per token. For example:
 
 ```json
 {
@@ -255,9 +255,9 @@ cat MEDLINE/medline_pubmed_2019_sents.txt | sort | uniq > MEDLINE/medline_pubmed
 Previous studies have used exact matching strategies which produce suboptimal concept linking. We use ScispaCy's `UMLSEntityLinker` to extract concepts.
 
 ```bash
-num_cpus=72
+num_cpus=32
 model=en_core_sci_lg
-batch_size=4096
+batch_size=1024
 
 # Please set this to a directory with a lot of space! ScispaCy will download indexes the first time which takes space 
 # export SCISPACY_CACHE=/to/cache/scispacy
@@ -272,7 +272,7 @@ python scispacy_entity_linking.py \
     --max_sent_tokens 128
 ```
 
-**WARNING**: This job is memory intensive and requires upto half TB. We ran this command on slurm supported cluster with 72 CPUs (with 6GB memory each) and a batch size of 4096. It took about 40hrs to link about 145M unique sentences.
+**WARNING**: This job is memory intensive and requires upto half TB. We ran this command on slurm supported cluster with 32 CPUs (with ~18GB memory each) and a batch size of 1024. It took about 75hrs to link about 149M unique sentences.
 
 ## Citation
 
