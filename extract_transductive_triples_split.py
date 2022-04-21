@@ -57,8 +57,8 @@ exclude_types = [
     'Cell Function', 'Genetic Function'
 ]
 include_groups = [
-    'CHEM', 'DISO', 'ANAT', 'PROC', 'CONC', 'DEVI', 'PHEN', 'PHYS'
-]
+    'CHEM', 'DISO', 'ANAT', 'PROC', 'DEVI', 'PHYS'
+] # remove CONC, PHEN -- too broad and not so useful
 filtered_semantic_types = semantic_types[semantic_types['SemGroup'].isin(include_groups)]
 filtered_semantic_types = filtered_semantic_types[-filtered_semantic_types['STY'].isin(exclude_types)]
 

@@ -1,5 +1,3 @@
 #!/bin/sh
 
-python extract_snomed_triples.py
-
-
+python extract_transductive_triples_split.py
