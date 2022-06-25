@@ -1,6 +1,6 @@
 mkdir med_distant19
 
-wget --content-disposition https://cloud.dfki.de/owncloud/index.php/s/MQoMJtdDnCKEbDa/download -P med_distant19/
-wget --content-disposition https://cloud.dfki.de/owncloud/index.php/s/mtekKoQZ4nK7yEp/download -P med_distant19/
-wget --content-disposition https://cloud.dfki.de/owncloud/index.php/s/miDJDpwo2NkWDgg/download -P med_distant19/
-wget --content-disposition https://cloud.dfki.de/owncloud/index.php/s/9SDnD77dkokNrsc/download -P med_distant19/
+wget --content-disposition https://cloud.dfki.de/owncloud/index.php/s/nMjdNbBe2gMXoGk/download -P med_distant19/
+wget --content-disposition https://cloud.dfki.de/owncloud/index.php/s/jfANo6bQw2fgToJ/download -P med_distant19/
+wget --content-disposition https://cloud.dfki.de/owncloud/index.php/s/CatSX27PsmD5Zjz/download -P med_distant19/
+wget --content-disposition https://cloud.dfki.de/owncloud/index.php/s/WCGrr59egm8qg4E/download -P med_distant19/

@@ -141,6 +141,20 @@ class BioDSRECorpus:
                 if not jsonl:
                     continue
                 jsonl = json.loads(jsonl)
+                text = jsonl["text"]
+                # transform mention into OpenNRE mention format
+                # NB. m[1] is the score of entity linking, we keep
+                # it for entity linking error analysis otherwise it
+                # can be ignored
+                jsonl["mentions"] = [
+                    {
+                        "id": m[0], "pos": m[2], "name": text[m[2][0]:m[2][1]]
+                    } for m in jsonl["mentions"]
+                ]
+                # keep mentions if at least 3 character length only
+                jsonl["mentions"] = [m for m in jsonl["mentions"] if len(m["name"]) >= 3]
+                if not jsonl["mentions"]:
+                    continue
                 yield idx, jsonl
                 idx += 1
     
@@ -637,10 +651,12 @@ class BioDSRECorpus:
             # subsample the positive proportion to len(pos) * sample
             if sample < 1.0:
                 logger.info(f'Subsampling positive idxs ...')
-                pos_idxs = set(random.sample(pos_idxs, int(len(pos_idxs) * sample)))
+                pos_idxs = list(random.sample(pos_idxs, int(len(pos_idxs) * sample)))
             else:
-                pos_idxs = set(pos_idxs)
+                pos_idxs = list(pos_idxs)
             
+            random.shuffle(pos_idxs)
+            random.shuffle(neg_idxs)
             ################################################################
             #
             # ADJUST +ve TO -ve's RATIO IF NEG PROP SPECIFIED
@@ -652,12 +668,12 @@ class BioDSRECorpus:
                 if n_pos > n_neg:
                     m = int(n_neg / neg_prop)
                     k_pos = m - n_neg
-                    pos_idxs = set(sorted(list(pos_idxs))[:k_pos])
+                    pos_idxs = pos_idxs[:k_pos]
                 # else we have more negatives than positives
                 else:
                     m = int(n_pos / (1 - neg_prop))
                     k_neg = m - n_pos
-                    neg_idxs = set(sorted(list(neg_idxs))[:k_neg])
+                    neg_idxs = neg_idxs[:k_neg]
             
             n_pos, n_neg = len(pos_idxs), len(neg_idxs)
             # for fast lookup
@@ -813,8 +829,9 @@ class BioDSRECorpus:
         
         # remove relations which have no sample in dev / test from train as well, use min rel freq as well
         split2rels = dict()
+        all_rels = set()
         for split in ['train', 'dev', 'test']:
-            rels = collections.Counter()
+            rel2count = collections.Counter()
             jsonl_fname = os.path.join(self.base_dir, f'{self.split}{dataset}_{split}.txt')
             with open(jsonl_fname, encoding='utf-8', errors='ignore') as rf:
                 for line in rf:
@@ -822,16 +839,23 @@ class BioDSRECorpus:
                     if not line:
                         continue
                     line = json.loads(line)
-                    rels.update([line['relation'],])
-            split2rels[split] = rels
+                    rel2count.update([line['relation'],])
+            split2rels[split] = rel2count
+            all_rels.update(list(rel2count.keys()))
         
-        train_relations = {rel for rel, rel_count in split2rels['train'].items() if rel_count > min_rel_freq}
-        dev_relations = {rel for rel, rel_count in split2rels['dev'].items() if rel_count > min_rel_freq}
-        test_relations = {rel for rel, rel_count in split2rels['test'].items() if rel_count > min_rel_freq}
-        rels_to_discard = (train_relations - dev_relations) | (train_relations - test_relations)
+        train_relations = {rel for rel, rel_count in split2rels['train'].items() if rel_count >= min_rel_freq}
+        dev_relations = {
+            rel for rel, rel_count in split2rels['dev'].items() 
+            if all([rel_count >= min_rel_freq, rel in train_relations])
+        }
+        test_relations = {
+            rel for rel, rel_count in split2rels['test'].items()
+            if all([rel_count >= min_rel_freq, rel in train_relations])
+        }
+        keep = test_relations.intersection(dev_relations.intersection(train_relations))
+        rels_to_discard = all_rels - keep 
         
         for split in ['train', 'dev', 'test']:
-            rels = collections.Counter()
             jsonl_fname = os.path.join(self.base_dir, f'{self.split}{dataset}_{split}.txt')
             n_pos, n_neg = prune_by_rels(jsonl_fname, rels_to_discard)
             

@@ -260,7 +260,7 @@ if __name__ == "__main__":
     parser.add_argument('--benchmark_dir', type=str)
     parser.add_argument('--umls_dir', type=str)
     parser.add_argument('--dataset', type=str, default='ind-med_distant')
-    parser.add_argument('--splits', type=str, default='train,dev,test')
+    parser.add_argument('--splits', type=str, default='train,val,test')
     args = parser.parse_args()
     main(args)
 
