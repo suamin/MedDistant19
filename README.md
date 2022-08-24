@@ -4,7 +4,7 @@
   <img width="50%" src="https://github.com/suamin/MedDistant19/blob/main/imgs/meddistant19.png" />
 </p>
 
-This is the data creation repository for the paper:  **MedDistant19: A Challenging Benchmark for Distantly Supervised Biomedical Relation Extraction**. Check out the [baselines](https://github.com/pminervini/meddistant-baselines) repository as well.
+The data creation repository for the paper:  **MedDistant19: Towards an Accurate Benchmark for Broad-Coverage Biomedical Relation Extraction**. Check out the [baselines](https://github.com/pminervini/meddistant-baselines) repository as well.
 
 --------------------------------------------------------------------------------
 
@@ -26,7 +26,7 @@ This is the data creation repository for the paper:  **MedDistant19: A Challengi
 
 ## Overview
 
-*MedDistant19* is a distantly supervised biomedical relation extraction (Bio-DSRE) corpus obtained by aligning the PubMed MEDLINE abstracts from 2019 with the SNOMED-CT knowledge graph (KG), derived from the UMLS Metathesaurus 2019. Lack of benchmark, reproducibility, and other inconsistencies in previous works called for the curation of such a resource, leading to a more challenging benchmark.
+*MedDistant19* is a distantly supervised biomedical relation extraction (Bio-DSRE) corpus obtained by aligning the PubMed MEDLINE abstracts from 2019 with the SNOMED-CT knowledge graph (KG) derived from the UMLS Metathesaurus 2019.
 
 ## Installation
 
@@ -38,14 +38,14 @@ pip install -r requirements.txt
 
 ## Download
 
-**Before Downloading**: Please make sure you have obtained the UMLS license to make use of this dataset. For more details please read the note [here](https://github.com/suamin/MedDistant19/blob/1bc0f0ebede7387ffa15325e156ab8cf352aa0fd/benchmark/README.md).
+**Before Downloading**: Ensure a copy of UMLS license to use this dataset. For more details, please read the note [here](https://github.com/suamin/MedDistant19/benchmark/README.md).
 
 ```bash
 cd benchmark
 bash download_meddistant19.sh
 ```
 
-This will download the data in OpenNRE compatiable format in the directory `benchmark/meddistant19`. An example line looks as follows:
+This will download the data in [OpenNRE](https://github.com/thunlp/OpenNRE) compatiable format in the directory `benchmark/meddistant19`. An example line looks as follows:
 
 ```json
 {
@@ -56,38 +56,38 @@ This will download the data in OpenNRE compatiable format in the directory `benc
 }
 ```
 
-The text is pre-tokenized with ScispaCy and can be split at whitespace. The position indexes are at character level.
+The text is pre-tokenized with [ScispaCy](https://github.com/allenai/scispacy) and can be split at whitespace. The position indexes are at the character level.
 
 ### Statistics
 
-The dataset is constructed using the inductive KG split (see below). The summary statistics of final data is presented in the following table:
+The dataset is constructed using the inductive KG split (see below). The summary statistics of the final data are presented in the following table:
 
-| Split     | Instances  | Facts     | Rare (%)  | Bags     | NA (%)  |
-| --------- |:----------:|:---------:|:---------:|:--------:|:-------:|
-| Train     | 251,558    | 2,366     |  92.3%    | 80,668   | 96.9%   |
-| Valid     | 179,393    | 806       |  87.8%    | 31,805   | 98.2%   |
-| Test      | 213,602    | 1,138     |  91.3%    | 50,375   | 98.1%   |
+| Split     | Instances  | Facts     | Inst. Per Bag | Bags     | NA (%)  |
+| --------- |:----------:|:---------:|:-------------:|:--------:|:-------:|
+| Train     | 450,071    | 5,455     |  5.06         | 88,861   | 90.0%   |
+| Valid     | 39,434     | 842       |  3.76         | 10,475   | 91.2%   |
+| Test      | 91,568     | 1,663     |  4.05         | 22,606   | 91.1%   |
 
-As discussed in the paper, the KG split can be inductive or transductive. The table below summarizes both (split ratio: 70%, 10%, 20%):
+The KG split can be inductive or transductive. The table below summarizes both (split ratio: `70%`, `10%`, `20%`):
 
 | Facts             | Train   | Valid  | Test   |
 | ----------------- |:-------:|:------:|:------:|
-| Inductive (I)     | 345,374 | 62,116 | 130,563|
-| Transductive (T)  | 402,522 | 41,491 | 84,414 |
+| Inductive (I)     | 261,797 | 48,641 | 97,861 |
+| Transductive (T)  | 318,524 | 28,370 | 56,812 |
 
 ## Create Dataset
 
 ### Knowledge Base
 
-We use `UMLS` as our knowledge base with `SNOMED_CT_US` subset-based installation using Metamorphosys. Please note that in order to have reproducible data splits, follow the steps as outlined below.  
+We use `UMLS` as our knowledge base with `SNOMED_CT_US` subset-based installation using Metamorphosys. Please note that to have reproducible data splits, follow the steps outlined below.  
   
 #### Download and Install UMLS2019AB  
 
-Download [UMLS2019AB](https://download.nlm.nih.gov/umls/kss/2019AB/umls-2019AB-full.zip) and unzip it in a directory (prefer this directory). Set the resulting path of the unzipped directory `umls-2019AB-full`. We will call this path as `UMLS_DOWNLOAD_DIR` in the remaining document.  
+Download [UMLS2019AB](https://download.nlm.nih.gov/umls/kss/2019AB/umls-2019AB-full.zip) and unzip it in a directory (prefer this directory). Set the resulting path of the unzipped directory `umls-2019AB-full`. We will call this path `UMLS_DOWNLOAD_DIR` in the remaining document.  
 
 ##### MetamorphoSys  
 
-Go to `UMLS_DOWNLOAD_DIR/2019AB-full` and use the script `run*` depending on your OS. Once the MetamorphoSys application opens, press the `Install UMLS` button. A window will prompt asking for `Source` and `Destination` paths. The `Source` shall already be set to `UMLS_DOWNLOAD_DIR/2019AB-full`. Create a new folder under `UMLS_DOWNLOAD_DIR` called `MedDistant19` and set it as `Destination` path, it shall look like `UMLS_DOWNLOAD_DIR/MedDistant19`. In the remaining document, these two paths will be called `SOURCE` and `DESTINATION`.  
+Go to `UMLS_DOWNLOAD_DIR/2019AB-full` and use the script `run*` depending on the OS. Once the MetamorphoSys application opens, press the `Install UMLS` button. A window will prompt asking for `Source` and `Destination` paths. The `Source` shall already be set to `UMLS_DOWNLOAD_DIR/2019AB-full`. Create a new folder under `UMLS_DOWNLOAD_DIR` called `MedDistant19` and set it as `Destination` path, it shall look like `UMLS_DOWNLOAD_DIR/MedDistant19`. In the remaining document, these two paths will be called `SOURCE` and `DESTINATION`.  
 
 ##### config.prop  
 
@@ -105,7 +105,7 @@ Once UMLS installation is complete with MetamorphoSys, find the `*.RRF` files un
 
 ##### Semantic Groups File  
 
-Please download the Semantic Groups file from [here](https://lhncbc.nlm.nih.gov/ii/tools/MetaMap/Docs/SemGroups_2018.txt).  Once you have downloaded all the files, please match the resulting MD5 hash values of relevant files as reported in the `mmsys.md5` file in this directory. If you still face mismatches, please report the issue.  
+Please download the Semantic Groups file from [here](https://lhncbc.nlm.nih.gov/ii/tools/MetaMap/Docs/SemGroups_2018.txt). Once downloaded all the files, please match the resulting MD5 hash values of relevant files as reported in the `mmsys.md5` file in this directory. If there still are mismatches, please report the issue.  
 
 #### Extract SNOMED-CT KG  
 
@@ -122,11 +122,11 @@ Now, we can extract the transductive triples split:
 bash scripts/kg_transductive.sh  
 ```  
 
-This will create several files but the more important ones are `train.tsv`, `dev.tsv` and `test.tsv`. These splits are transductive in nature, i.e., the entities appearing in dev and test sets have appeared in the training set.  
+This will create several files, but the more important ones are `train.tsv`, `dev.tsv` and `test.tsv`. These splits are transductive, i.e., the entities appearing in dev and test sets have appeared in the training set.  
   
 ##### Inductive Split  
 
-Inductive split refers to the creation of dev and test sets where entities were not seen during training. It uses the files created by transductive split. To create simple inductive split, use:  
+Inductive split refers to the creation of dev and test sets where entities were not seen during training. It uses the files created by the transductive split. To create a simple inductive split, use:
 
 ```bash
 bash scripts/kg_inductive.sh  
@@ -134,7 +134,7 @@ bash scripts/kg_inductive.sh
 
 ## Documents
 
-As our documents we use abstract texts from the PubMed MEDLINE 2019 version available [here](https://lhncbc.nlm.nih.gov/ii/information/MBR/Baselines/2019.html). We provide a processed version of the corpora which has been deduplicated, tokenized and linked to the UMLS concepts with ScipaCy's `UMLSEntityLinker`. You can optionally recreate the corpora by following the steps outlined in the section "From Scratch".
+As our documents, we use abstract texts from the PubMed MEDLINE 2019 version available [here](https://lhncbc.nlm.nih.gov/ii/information/MBR/Baselines/2019.html). We provide a processed version of the corpora, which has been deduplicated, tokenized, and linked to the UMLS concepts with ScipaCy's `UMLSEntityLinker`. We can optionally recreate the corpora by following the steps outlined in the "From Scratch" section.
 
 ### Download Entity Linked Corpora
 
@@ -145,7 +145,7 @@ cd MEDLINE
 tar -xzvf medline_pubmed_2019_entity_linked.tar.gz
 ```
 
-This will result extract the file `medline_pubmed_2019_entity_linked.jsonl` where each line is in JSON format with tokenized text with associated UMLS concepts and linguistic features per token. For example:
+This will result extract the file `medline_pubmed_2019_entity_linked.jsonl`, where each line is in JSON format with tokenized text with associated UMLS concepts and linguistic features per token. For example:
 
 ```json
 {
@@ -176,29 +176,31 @@ This will result extract the file `medline_pubmed_2019_entity_linked.jsonl` wher
 }
 ```
 
-(Optional Step: Start) This is step is optional if you wish to train your own word2vec model using this corpus. The current default (`word2vec.py`) setup is the one used to obtain the pre-trained PubMed embeddings for word2vec model:
+#### Train Word2Vec (Optional)
+
+This step is optional if we wish to train our word2vec model using this corpus. The current default (`word2vec.py`) setup is the one used to obtain the pre-trained PubMed embeddings for the word2vec model:
 
 ```bash
 python word2vec.py --medline_entities_linked_fname MEDLINE/medline_pubmed_2019_entity_linked.jsonl --output_dir w2v_model
 ```
-(Optional Step: End)
+(Optional step ends here)
  
-Assuming that you have already followed the instructions in the UMLS folder, we can create the benchmark splits in OpenNRE format.
+Assuming we followed the instructions in the UMLS folder, we can now create the benchmark splits in OpenNRE format.
 
-The script below creates the the benchmark `med_distant19` with the split files `med_distant19_train.txt`, `med_distant19_dev.txt` and `med_distant19_test.txt` in `MEDLINE` directory:
+The script below creates the benchmark `med_distant19` with the split files `med_distant19_train.txt`, `med_distant19_dev.txt`, and `med_distant19_test.txt` in `MEDLINE` directory:
 
 ```bash
 bash scripts/create_meddistant19.sh
 ```
 
-You can move these files to the folder `benchmark`:
+We can move these files to the folder `benchmark`:
 
 ```bash
 mkdir benchmark/med_distant19
 mv ../MEDLINE/med_distant19_*.txt benchmark/med_distant19/
 ```
 
-Please match the md5 hash values provided in `benchmark/med_distant19`. We can extract several relevant files (semantic types, semantic groups, relation categories etc.) from `benchmark/med_distant19` with:
+Please match the md5 hash values provided in `benchmark/med_distant19`. We can extract several relevant files (semantic types, semantic groups, relation categories, etc.) from `benchmark/med_distant19` with:
 
 ```bash
 python extract_benchmark_metadata.py \
@@ -211,7 +213,7 @@ python extract_benchmark_metadata.py \
 
 ### Download Abstracts
 
-First download the abstracts from 2019 and extract the texts from them with script:
+First, download the abstracts from 2019 and extract the texts from them with the script:
 
 ```bash
 cd ../scripts
@@ -222,7 +224,7 @@ This will produce several `*.xml.gz.txt` files in this directory.
 
 ### Install ScispaCy Model
 
-We use the `en_core_sci_lg` model, please install it first:
+We use the `en_core_sci_lg` model; please install it first:
 
 ```
 pip install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.4.0/en_core_sci_lg-0.4.0.tar.gz
@@ -244,7 +246,7 @@ python scispacy_tokenization.py \
     --batch_size $batch_size
 ```
 
-We ran this command on a cluster with slurm support. It took 9hrs with 32 CPUs (with 4GB memory each) and a batch size of 1024 used internally to make use of spaCy's multi-processing. The number of sentences extracted will be around 151M in the file `MEDLINE/medline_pubmed_2019_sents.txt`. Sort and extract unique sentences:
+We ran this command on a cluster with SLURM support. It took 9hrs with 32 CPUs (with 4GB memory each) and a batch size of 1024 used internally to use spaCy's multi-processing. The number of extracted sentences will be 151M in the file `MEDLINE/medline_pubmed_2019_sents.txt`. Sort and extract unique sentences:
 
 ```bash
 cat MEDLINE/medline_pubmed_2019_sents.txt | sort | uniq > MEDLINE/medline_pubmed_2019_unique_sents.txt
@@ -252,14 +254,14 @@ cat MEDLINE/medline_pubmed_2019_sents.txt | sort | uniq > MEDLINE/medline_pubmed
 
 #### Entity Linking
 
-Previous studies have used exact matching strategies which produce suboptimal concept linking. We use ScispaCy's `UMLSEntityLinker` to extract concepts.
+Previous studies have used exact matching strategies, which produce suboptimal concept linking. We use ScispaCy's `UMLSEntityLinker` to extract concepts.
 
 ```bash
 num_cpus=32
 model=en_core_sci_lg
 batch_size=1024
 
-# Please set this to a directory with a lot of space! ScispaCy will download indexes the first time which takes space 
+# Please set this to a directory with much space! ScispaCy will download indexes the first time, which takes space 
 # export SCISPACY_CACHE=/to/cache/scispacy
 
 python scispacy_entity_linking.py \
@@ -272,7 +274,7 @@ python scispacy_entity_linking.py \
     --max_sent_tokens 128
 ```
 
-**WARNING**: This job is memory intensive and requires upto half TB. We ran this command on slurm supported cluster with 32 CPUs (with ~18GB memory each) and a batch size of 1024. It took about 75hrs to link about 149M unique sentences.
+**WARNING**: This job is memory intensive and requires up to half TB. We ran this command on SLURM supported cluster with 32 CPUs (with ~18GB memory each) and a batch size of 1024. It took about 75hrs to link about 149M unique sentences.
 
 ## Citation
 
@@ -280,13 +282,17 @@ If you find our work useful, please consider citing:
 
 ```bibtex
 @article{amin2022meddistant19,
-  title={MedDistant19: A Challenging Benchmark for Distantly Supervised Biomedical Relation Extraction},
-  author={Amin, Saadullah and Minervini, Pasquale and Chang, David and Neumann, G{\"u}nter and Stenetorp, Pontus},
-  journal={arXiv preprint arXiv:2204.04779},
+  title={MedDistant19: Towards an Accurate Benchmark for Broad-Coverage Biomedical Relation Extraction},
+  author={Amin, Saadullah and 
+          Minervini, Pasquale and 
+          Chang, David and 
+          Stenetorp, Pontus and 
+          Neumann, G{\"u}nter},
+  journal={COLING (to appear)},
   year={2022}
 }
 ```
 
 ## Acknowledgement  
-  
-We are thankful for the transductive split of SNOMED-CT in MedDistant19, which is adopted from [snomed_kge](https://github.com/dchang56/snomed_kge). We are also grateful for the inductive split code by [blp](https://github.com/dfdazac/blp).
+
+We thank the original authors of the following sources for releasing their split codes. The transductive split is adopted from [snomed_kge](https://github.com/dchang56/snomed_kge). The inductive split is adopted from [blp](https://github.com/dfdazac/blp).
