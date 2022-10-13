@@ -283,7 +283,7 @@ If you find our work useful, please consider citing:
 ```bibtex
 @inproceedings{amin-etal-2022-meddistant19,
     title = "{M}ed{D}istant19: Towards an Accurate Benchmark for Broad-Coverage Biomedical Relation Extraction",
-    author = "Amin, Saadullah and Minervini, Pasquale and Chang, David and Stenetorp, Pontus and Neumann, Guenter",
+    author = "Amin, Saadullah and Minervini, Pasquale and Chang, David and Stenetorp, Pontus and Neumann, G{\"u}nter",
     booktitle = "Proceedings of the 29th International Conference on Computational Linguistics",
     month = oct,
     year = "2022",
