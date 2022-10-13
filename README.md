@@ -281,15 +281,16 @@ python scispacy_entity_linking.py \
 If you find our work useful, please consider citing:
 
 ```bibtex
-@article{amin2022meddistant19,
-  title={MedDistant19: Towards an Accurate Benchmark for Broad-Coverage Biomedical Relation Extraction},
-  author={Amin, Saadullah and 
-          Minervini, Pasquale and 
-          Chang, David and 
-          Stenetorp, Pontus and 
-          Neumann, G{\"u}nter},
-  journal={COLING (to appear)},
-  year={2022}
+@inproceedings{amin-etal-2022-meddistant19,
+    title = "{M}ed{D}istant19: Towards an Accurate Benchmark for Broad-Coverage Biomedical Relation Extraction",
+    author = "Amin, Saadullah and Minervini, Pasquale and Chang, David and Stenetorp, Pontus and Neumann, Guenter",
+    booktitle = "Proceedings of the 29th International Conference on Computational Linguistics",
+    month = oct,
+    year = "2022",
+    address = "Gyeongju, Republic of Korea",
+    publisher = "International Committee on Computational Linguistics",
+    url = "https://aclanthology.org/2022.coling-1.198",
+    pages = "2259--2277",
 }
 ```
 
